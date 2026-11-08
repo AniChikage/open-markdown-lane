@@ -1,18 +1,21 @@
 import { t } from "../i18n";
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { ThemeCustomization } from '../themeCustomization';
 import { customizationDefaults } from '../themeCustomization';
 export function ThemeCustomizer({ value, change, reset, save }: { value: ThemeCustomization; change(value: ThemeCustomization): void; reset(): void; save(): Promise<void> }) {
   const [expanded, setExpanded] = useState(false), [error, setError] = useState('');
   const fontsId = useId(), codeFontsId = useId();
   const percent = value.contentWidthUnit === '%';
+  const width = percent ? value.contentWidthPercent : value.contentWidth;
+  const [widthInput, setWidthInput] = useState(String(width));
+  useEffect(() => setWidthInput(String(width)), [width, percent]);
   return <div className="theme-customizer">
     <fieldset><legend>{t("字体与正文布局")}</legend>
       <p className="dialog-note">{t("设置保存在当前主题中，即时生效。可选择建议字体，或输入本机已安装的字体名称；留空则跟随主题。未安装的字体会使用系统后备字体。")}</p>
       <div className="form-grid">
         <label>{t("正文字体")}<input aria-label={t("主题正文字体")} list={fontsId} placeholder={t("跟随主题")} value={value.fontFamily} maxLength={200} onChange={event => change({ ...value, fontFamily: event.target.value })}/></label>
         <label>{t("代码字体")}<input aria-label={t("主题代码字体")} list={codeFontsId} placeholder={t("跟随主题")} value={value.codeFontFamily} maxLength={200} onChange={event => change({ ...value, codeFontFamily: event.target.value })}/></label>
-        <label>{t("正文最大宽度")}<input aria-label={t("主题正文宽度")} type="number" min={percent ? 20 : 480} max={percent ? 100 : 1600} step={percent ? 1 : 20} value={percent ? value.contentWidthPercent : value.contentWidth} onChange={event => { const n=Number(event.target.value); if(n >= (percent ? 20 : 480) && n <= (percent ? 100 : 1600)) change({...value, [percent ? 'contentWidthPercent' : 'contentWidth']:n}); }}/></label>
+        <label>{t("正文最大宽度")}<input aria-label={t("主题正文宽度")} type="number" min={percent ? 20 : 480} max={percent ? 100 : 1600} step={1} value={widthInput} onChange={event => { setWidthInput(event.target.value); const n=Number(event.target.value); if(event.target.value !== '' && event.target.validity.valid) change({...value, [percent ? 'contentWidthPercent' : 'contentWidth']:n}); }} onBlur={() => setWidthInput(String(width))}/></label>
         <label>{t("宽度单位")}<select aria-label={t("正文宽度单位")} value={value.contentWidthUnit} onChange={event => change({...value,contentWidthUnit:event.target.value === '%' ? '%' : 'px'})}><option value="px">{t("像素（px）")}</option><option value="%">{t("百分比（%）")}</option></select></label>
       </div>
       <datalist id={fontsId}>{['"Open Sans", sans-serif', 'system-ui, sans-serif', 'Georgia, serif', '"Times New Roman", serif', '"PingFang SC", sans-serif', '"Microsoft YaHei", sans-serif', '"Noto Sans CJK SC", sans-serif', '"Songti SC", serif'].map(font => <option key={font} value={font}/>)}</datalist>

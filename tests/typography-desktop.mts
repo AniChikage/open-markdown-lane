@@ -28,7 +28,7 @@ try{
  await expect(settings.getByRole('combobox',{name:'正文宽度单位',exact:true})).toHaveValue('px');
  await settings.getByRole('combobox',{name:'主题正文字体',exact:true}).fill('Georgia, serif');
  await settings.getByRole('combobox',{name:'主题代码字体',exact:true}).fill('"Courier New", monospace');
- await settings.getByRole('combobox',{name:'正文宽度单位',exact:true}).selectOption('%');await settings.getByRole('spinbutton',{name:'主题正文宽度',exact:true}).fill('75');
+ await settings.getByRole('combobox',{name:'正文宽度单位',exact:true}).selectOption('%');const widthInput=settings.getByRole('spinbutton',{name:'主题正文宽度',exact:true});await widthInput.fill('');await widthInput.pressSequentially('75');await expect(widthInput).toHaveValue('75');await widthInput.fill('10');await settings.getByRole('combobox',{name:'主题正文字体',exact:true}).focus();await expect(widthInput).toHaveValue('75');
  // Leave room for the rest of the settings while checking the actual form layout.
  await settings.getByRole('group',{name:'字体与正文布局',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:path.join(qa,'typography-settings.png')});await close();
  await widthMatches('.document-editor[data-active="true"] .rich-document');
