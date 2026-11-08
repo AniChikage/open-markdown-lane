@@ -1,3 +1,18 @@
+# 0.24.5 AppImage 文件名与标准更新通道
+
+已发布 [v0.24.5](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.5)，发行源码为 `565968982f75e92c8fbee1c3d4d0a24fd86d1d59`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42446559737)的 macOS、Windows、Linux、Windows 预览、真实 FUSE、发布及公开更新验证七项任务全部通过。
+
+- AppImage 使用 `Open-Markdown-Lane-0.24.5-x86_64.AppImage`，内嵌标准 `gh-releases-zsync` 稳定版通道；同步发布 `.AppImage.zsync`，纳入 SHA-256 汇总。DEB 保留原安装命名。更新通过外部 AppImageUpdate 工具执行，应用没有新增后台静默更新器；0.24.4 及更早文件需要先手动更新一次。
+- 本地类型检查、构建和 253 项单测通过。实际旧 AppImage 的 ELF 保留区写入验证确认其他字节及 SquashFS 偏移不变；打包时再调用真实运行时核对偏移与更新信息。
+- 发布前使用校验过的上一公开版本和固定摘要的官方 AppImageUpdate 工具，实际执行 HTTP Range 增量更新。125.49 MiB 的目标镜像仅下载 349,996 字节，共 6 次 Range 请求；结果 SHA-256 与候选包相同，成功后移除测试旧文件。再次检查报告无更新；故意破坏最终校验和时拒绝更新，原文件仍保留。该阶段仅将控制文件的下载地址指向隔离回环服务，没有改动镜像与块校验数据。
+- 发布后另从真实 GitHub 稳定通道更新隔离的 0.24.4 副本，得到公开 0.24.5 的精确 SHA-256，随后不提供通道覆盖参数，直接用新镜像内嵌信息检查，确认无进一步更新。0.24.4 没有更新信息，因此旧文件到新文件的首次测试显式提供通道，未冒充旧版原生支持自动发现。
+- Windows 实际安装／升级／卸载、Everything 预览、Linux DEB／AppImage 安装载荷及 Ubuntu 22.04／24.04 普通用户真实 FUSE 挂载和沙箱编辑回归通过。既有 Issue、插件、组合输入、AI 审阅、撤销／重做和文档恢复检查随流水线执行。本轮未重新人工操作实体输入法候选窗，也未验收 Ubuntu 26.04 桌面。
+- 七个公开载荷（六个安装文件及 zsync）全部独立下载，大小、GitHub 摘要及汇总 SHA-256 一致；公开 Mac 包匹配已验收 CI 产物。
+- 本机替换为原始 CI 签名的 0.24.5，415 项文件／链接匹配。实际关于窗口、三个恢复窗口、七个原标签、未保存草稿、独立文档输入、连续空行、精确保存、撤销／重做、源码往返及双向分屏通过，测试标签与最近记录已移除。
+- 24 份会话中的 35 份文档记录、25 个外部路径状态、编辑偏好和模型配置保持一致，模型配置权限仍为 `0600`。一处原目录在替换安装前已不存在，启动时清空该失效目录指针，保留文档草稿及冲突提示，没有重新载入或覆盖磁盘。最近记录语义一致，文件选择器上次目录／位置发生正常变化。旧本机应用副本与旧安装归档已清理；性能测试专用副本同步到新版本，没有据此声称重新测量性能。
+
+---
+
 # 0.24.4 系统语言与首次欢迎文档
 
 已发布 [v0.24.4](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.4)，发行源码为 `05c40ac1f0d3ab75832534f9c714f31ca6c34515`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42336680574)的 macOS、Windows、Linux、Windows 预览、真实 FUSE 和发布六项任务全部通过。
