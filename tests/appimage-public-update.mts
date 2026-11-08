@@ -33,12 +33,12 @@ try {
   const old=await get(previous.installer.browser_download_url);verifyUpgradeChecksum((await get(previous.sums.browser_download_url)).toString(),previous.installer.name,old);
   const seed=path.join(root,'previous.AppImage');await writeFile(seed,old);await chmod(seed,0o755);
   const updater=await prepareAppImageUpdater();
-  // Releases before 0.24.5 do not contain update information. This explicit
-  // bootstrap uses the official tool's override; published new images then
-  // discover the same stable channel using their own embedded information.
-  const update=await execute(updater,['-r','-u',appImageUpdateInformation,seed],{cwd:root,timeout:240000,maxBuffer:8*1024*1024});
+  // Only legacy releases without metadata need an explicit bootstrap.
+  // Newer seed images must discover the next release from their embedded channel.
+  const bootstrapOverrideUsed=!readAppImageUpdateInformation(old);
+  const update=await execute(updater,['-r',...(bootstrapOverrideUsed?['-u',appImageUpdateInformation]:[]),seed],{cwd:root,timeout:240000,maxBuffer:8*1024*1024});
   const result=path.join(root,name);assert.equal(sha256(await readFile(result)),hash);assert.equal(await stat(seed).then(()=>true,()=>false),false);
   const check=await execute(updater,['--check-for-update',result],{cwd:root,timeout:180000,maxBuffer:8*1024*1024});
-  await writeFile(path.join(qa,'public-appimage-update-results.json'),JSON.stringify({version:pkg.version,priorVersion:priorTag,publishedAppImage:current.installer.browser_download_url,sha256:hash,updateInformation:appImageUpdateInformation,updaterVersion,updaterSHA256,oldRemovedAfterVerifiedUpdate:true,embeddedChannelCheckPassed:true,bootstrapOverrideUsed:true,update,check},null,2));
+  await writeFile(path.join(qa,'public-appimage-update-results.json'),JSON.stringify({version:pkg.version,priorVersion:priorTag,publishedAppImage:current.installer.browser_download_url,sha256:hash,updateInformation:appImageUpdateInformation,updaterVersion,updaterSHA256,oldRemovedAfterVerifiedUpdate:true,embeddedChannelCheckPassed:true,bootstrapOverrideUsed,update,check},null,2));
   console.log('PASS: Official AppImageUpdate resolves the published stable channel, updates an isolated prior public image to the exact released SHA256, removes its old copy and reports no further update using embedded information.');
 } finally {await rm(root,{force:true,recursive:true});}

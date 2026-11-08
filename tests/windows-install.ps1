@@ -16,6 +16,8 @@ if (Test-Path (Join-Path $destination 'Open Typora.exe')) { throw 'Upgrade retai
 if (!(Test-Path $env:OPEN_MARKDOWN_LANE_EXECUTABLE)) { throw 'Installer did not produce the application executable' }
 node tests/localization-desktop.mts
 if ($LASTEXITCODE -ne 0) { throw "Installed localization acceptance failed" }
+node tests/typography-desktop.mts
+if ($LASTEXITCODE -ne 0) { throw "Installed typography acceptance failed" }
 node tests/issues-desktop.mts
 if ($LASTEXITCODE -ne 0) { throw "Blank-line rendering and missing-file launch acceptance failed" }
 node tests/batch-desktop.mts

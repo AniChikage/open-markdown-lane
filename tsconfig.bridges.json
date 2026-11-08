@@ -27,6 +27,7 @@
     "tests/webkit-clipboard.ts",
     "shared/contracts.d.ts",
     "tests/browser-globals.d.ts",
-    "tests/webkit-ai.ts"
+    "tests/webkit-ai.ts",
+    "tests/webkit-typography.ts"
   ]
 }

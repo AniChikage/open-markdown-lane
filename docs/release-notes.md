@@ -1,14 +1,13 @@
-Open Markdown Lane 0.24.5 improves AppImage naming and standard update support.
+Open Markdown Lane 0.24.6 adds easier font and content-width settings ([#18](https://github.com/AniChikage/open-markdown-lane/issues/18)).
 
 This is an independent, unofficial project, unaffiliated with Typora. If you can afford it, please [buy Typora](https://store.typora.io/) and support its official developers.
 
 ## Changes
 
-- Linux AppImage files now use `Open-Markdown-Lane-VERSION-x86_64.AppImage`. DEB, Windows and macOS package naming stays the same.
-- The AppImage embeds a standard `gh-releases-zsync` update channel pointing to stable GitHub releases. A matching `.AppImage.zsync` control file is published and covered by `SHA256SUMS.txt`.
-- Use AppImageUpdate or `appimageupdatetool` to check and install updates. With `--remove-old`, the upstream tool removes the previous AppImage after validating its replacement. Existing documents, recovery data and settings stay in their data directories.
-- Standard embedded update discovery starts with 0.24.5. Older AppImages need a manual first upgrade, or the upstream tool's explicit update-information override.
-- English/system-language behavior and the existing editing, recovery and plugin features are retained.
+- **Preferences → Fonts & Layout** exposes separate body and code font fields without expanding advanced CSS. Choose a suggestion or enter a locally installed font family/fallback list; empty fields use the theme default. Suggestions do not install or download fonts.
+- Maximum content width supports **px or %**. Percentage widths follow each editor pane in live/source mode and split view. Both values are remembered, and existing pixel settings retain their meaning.
+- Font and layout choices remain separate for each theme, persist across restarts and are included in CSS export. Reset restores the current theme defaults.
+- Existing editing, undo/redo, document recovery, language preferences and AppImage update support remain available.
 
 ## Downloads
 
@@ -20,4 +19,4 @@ The six installers and the control file are covered by `SHA256SUMS.txt`. macOS i
 
 ## Validation
 
-Release gates check the actual runtime's embedded update information, zsync integrity, real upstream delta updates, unchanged-block reuse, no-update detection and checksum-failure retention. Existing installed-editor and Ubuntu 22.04/24.04 real FUSE acceptance also run. After publication, a separate job checks the public GitHub update channel against the actual released files.
+Release gates exercise actual font styles for body/inline/fenced/large-code editing, percentage geometry in live/source/split/narrow layouts, legacy settings, restart, theme switching/reset, CSS export and exact save/undo/redo. macOS native WebKit has its own focused acceptance. Existing installed-editor, issue regressions and Ubuntu 22.04/24.04 real FUSE checks also run. The post-publication AppImageUpdate job uses the previous public image's embedded channel when available.

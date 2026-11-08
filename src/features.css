@@ -72,7 +72,7 @@
 .rich-document{line-height:var(--document-line-height,1.6);font-family:var(--document-font,"Open Sans","PingFang SC",sans-serif)}
 .source-surface .cm-scroller{font-family:var(--document-font,"Open Sans","PingFang SC",sans-serif)!important;line-height:var(--document-line-height,1.6)!important}
 .rich-document>p,.rich-document>ul,.rich-document>ol,.rich-document>blockquote,.print-document>p{margin-top:var(--paragraph-spacing,12.8px);margin-bottom:var(--paragraph-spacing,12.8px)}
-.rich-document code,.rich-document pre,.rich-document .md-fence .cm-scroller,.print-document code,.print-document pre{font-family:var(--code-font,Menlo,Consolas,monospace)!important}
+.rich-document code,.rich-document pre,.rich-document .md-fence .cm-scroller,.rich-document .md-fence-opening,.print-document code,.print-document pre{font-family:var(--code-font,Menlo,Consolas,monospace)!important}
 .theme-customizer{margin:12px 0}.theme-customizer-fields{margin-top:12px}.theme-customizer-fields textarea{width:100%;resize:vertical;font:12px/1.6 Menlo,Consolas,monospace;min-height:80px}.theme-customizer-actions,.theme-color-field{display:flex;gap:8px;align-items:center}.theme-customizer-actions{flex-wrap:wrap}.theme-color-field input{width:48px;min-height:32px}
 
 .rich-document .print-page-break{position:relative;height:22px;margin:18px 0;border-top:1px dashed var(--muted);opacity:.65;user-select:none}

@@ -1,6 +1,6 @@
 {
   "name": "open-markdown-lane",
-  "version": "0.24.5",
+  "version": "0.24.6",
   "description": "A local Markdown writing space with live rendering and lossless source editing.",
   "private": true,
   "type": "module",

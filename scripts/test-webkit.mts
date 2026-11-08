@@ -9,6 +9,7 @@ const uploads = [];
 const clipboardOnly = process.argv.includes("--clipboard");
 const aiOnly = process.argv.includes("--ai");
 const localeOnly = process.argv.includes('--locale');
+const typographyOnly = process.argv.includes('--typography');
 const aiRequests: string[] = [];
 const server = createServer(async (request, response) => {
   try { let body = ""; for await (const chunk of request) body += chunk; const value = JSON.parse(body); if (aiOnly) { assert.equal(request.method,"POST"); assert.equal(request.url,"/owned/v1/chat/completions"); assert.equal(request.headers.authorization,"Bearer owned-fixture-only"); const user = JSON.parse(value.messages[1].content); aiRequests.push(user.question || user.selection); const source = user.sources?.find((item: {text:string}) => item.text.includes("Budget: 300 USD.")); const batch = value.messages[0].content.startsWith("You edit a small set") ? JSON.parse(user.selection) : null; const text = batch ? JSON.stringify({summary:"Update the product name.",files:batch.documents.map((source: {id:string})=>({id:source.id,summary:"Use the new product name.",edits:[{before:"Old Product",after:"New Product"}]}))}) : user.question ? JSON.stringify({answer:"The budget is 300 USD. [" + source.id + "]",insufficient:false,citations:[{sourceId:source.id,quote:"Budget: 300 USD."}]}) : user.instruction.includes("连接成功") ? "连接成功" : user.selection.replace("普通","自然").replace("粗体","加粗").replace("A","甲"); response.writeHead(200,{"Content-Type":"application/json"}); response.end(JSON.stringify({choices:[{message:{content:text},finish_reason:"stop"}]})); return; } assert.equal(request.method, "POST"); assert.equal(value.list.length, 1); const file = value.list[0]; assert.match(file, /fixture-[A-Fa-f0-9-]+\.png$/); const bytes = await readFile(file); assert.deepEqual([...bytes.subarray(0, 8)], [137,80,78,71,13,10,26,10]); uploads.push({ bytes: bytes.length }); response.writeHead(200, {"Content-Type":"application/json"}); response.end(JSON.stringify({success:true,result:["https://images.example.invalid/owned-fixture.png"]})); }
@@ -59,7 +60,7 @@ try {
   await cp("build/runtime/shared/plugin-loader.mjs", path.join(resources, "plugin-loader.js"));
   await cp("tests/fixtures/plugin-package", path.join(resources, "Plugin-package-fixture"), {recursive:true});
   for(let i=0;i<3;i++)await writeFile(path.join(resources,"Plugin-package-fixture",`padding-${i}.js`),"/*"+"x".repeat(1_500_000)+"*/");
-  await writeFile(path.join(resources, "web-tests.js"), aiOnly ? (await readFile("build/runtime/tests/webkit-ai.js", "utf8")) + "\nreturn runWebKitAITests(uploaderURL.replace(\"/upload\",\"/owned/v1\"));\n" : clipboardOnly ? (await readFile("build/runtime/tests/webkit-clipboard.js", "utf8")) + "\nreturn runWebKitClipboardTests();\n" : (await readFile("build/runtime/tests/webkit.js", "utf8")) + "\nreturn runWebKitTests(uploaderURL);\n");
+  await writeFile(path.join(resources, "web-tests.js"), typographyOnly ? (await readFile("build/runtime/tests/webkit-typography.js", "utf8")) + "\nreturn runWebKitTypographyTests();\n" : aiOnly ? (await readFile("build/runtime/tests/webkit-ai.js", "utf8")) + "\nreturn runWebKitAITests(uploaderURL.replace(\"/upload\",\"/owned/v1\"));\n" : clipboardOnly ? (await readFile("build/runtime/tests/webkit-clipboard.js", "utf8")) + "\nreturn runWebKitClipboardTests();\n" : (await readFile("build/runtime/tests/webkit.js", "utf8")) + "\nreturn runWebKitTests(uploaderURL);\n");
   await writeFile(
     path.join(contents, "Info.plist"),
     '<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>org.opentypora.webkittests</string><key>CFBundleExecutable</key><string>WebKitTests</string></dict></plist>',
@@ -99,9 +100,9 @@ try {
     );
   });
   if (aiOnly) { assert.equal(aiRequests.length,6); assert.deepEqual(aiRequests.slice(0,4),["你好","普通","粗体","A"]); assert.equal(aiRequests[4],"What is the release budget?"); const aiFile=path.join(directory,"data/ai-settings.json"); assert.equal(JSON.parse(await readFile(aiFile,"utf8")).apiKey,"owned-fixture-only"); assert.equal((await stat(aiFile)).mode & 0o777,0o600); console.log("PASS: native AI UI reaches actual URLSession fixture, sends only selected text and persists the owner-only file credential without exposing it through the bridge"); }
-  if (!clipboardOnly && !aiOnly && !localeOnly) assert.equal(uploads.length, 1, "native PicGo request reaches the owned HTTP fixture once");
-  if (!clipboardOnly && !aiOnly && !localeOnly) console.log("PASS: native PicGo integration sends owned PNG bytes and accepts the returned URL");
-  if (!clipboardOnly && !aiOnly && !localeOnly && process.env.OPEN_MARKDOWN_LANE_QA_DIR) {
+  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly) assert.equal(uploads.length, 1, "native PicGo request reaches the owned HTTP fixture once");
+  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly) console.log("PASS: native PicGo integration sends owned PNG bytes and accepts the returned URL");
+  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly && process.env.OPEN_MARKDOWN_LANE_QA_DIR) {
     await mkdir(process.env.OPEN_MARKDOWN_LANE_QA_DIR, { recursive: true });
     await cp(path.join(directory, "data/native-test-long.pdf"), path.join(process.env.OPEN_MARKDOWN_LANE_QA_DIR, "native-pagination.pdf"));
     for (const name of await readdir(path.join(directory, "data"))) if ((name.startsWith("native-converted.") || ["native-complex.pdf", "native-controlled.pdf", "native-tableheaders.pdf"].includes(name))) await cp(path.join(directory, "data", name), path.join(process.env.OPEN_MARKDOWN_LANE_QA_DIR, name), { recursive: true });

@@ -50,7 +50,7 @@ final class WebKitTests: NSObject, NSApplicationDelegate, WKNavigationDelegate {
           guard saved == output["source"] as? String else {
             throw NativeFailure("Native saved bytes differ from the editor document.")
           }
-          if output["clipboardOnly"] as? Bool == true || output["aiOnly"] as? Bool == true {
+          if output["clipboardOnly"] as? Bool == true || output["aiOnly"] as? Bool == true || output["typographyOnly"] as? Bool == true {
             let data = try JSONSerialization.data(withJSONObject: output, options: [.prettyPrinted, .sortedKeys])
             print(String(data: data, encoding: .utf8)!)
             print("PASS: native focused editor acceptance persisted exact bytes")

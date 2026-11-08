@@ -1,8 +1,12 @@
 # Customizing themes
 
-Open Preferences, choose a theme, then expand **自定义当前主题**. Changes preview immediately and are saved separately for each theme, including installed CSS themes.
+Open **Preferences → Fonts & Layout** (中文：偏好设置 → 字体与正文布局). Body and code fonts and maximum content width are visible here without expanding advanced settings. Changes preview immediately and are saved separately for each theme, including installed CSS themes.
 
-Controls cover body/code font families, line height (1.2–2.5), document width (480–1,600 px), paragraph spacing (0–40 px), accent, paper and text colors. Empty font/color values follow the selected theme. Font fields accept installed font-family names, not CSS declarations. The background-image settings remain separate and are excluded from exports.
+Choose a suggested **Text font** or **Code font**, or type a locally installed family such as `Georgia, serif` or `"JetBrains Mono", monospace`. These are font-family names or fallback lists, not CSS declarations. Suggestions do not download fonts; unavailable fonts use a system fallback. Empty fields follow the theme. The code setting applies to inline code and fenced blocks, including their active editor and large-code preview.
+
+Set **Maximum content width** and **Width unit** to pixels (480–1,600 px) or percentages (20–100%). Percentages use each editor pane's available width in live and source mode, so they adapt to resizing, sidebars and split view. Switching units remembers both values; older saved widths retain their pixel meaning. These controls affect the editing layout; printed output continues to follow its paper size and margins.
+
+Expand **Customize current theme** (自定义当前主题) for line height (1.2–2.5), paragraph spacing (0–40 px), accent, paper and text colors, custom CSS and print CSS. Empty color values follow the selected theme. Background-image settings remain separate and are excluded from exports.
 
 ## CSS
 
