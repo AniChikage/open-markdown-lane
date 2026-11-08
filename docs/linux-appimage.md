@@ -1,11 +1,28 @@
 # Running the Linux AppImage
 
-Use the x64 AppImage from the [0.20.2 release](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.20.2) and verify its SHA-256 checksum. Make it executable, then run it as your ordinary user. The DEB is the recommended Ubuntu installation, with desktop and file associations included.
+Use the x64 AppImage from the [0.24.5 release](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.5) and verify its SHA-256 checksum. Make it executable, then run it as your ordinary user. The DEB is the recommended Ubuntu installation, with desktop and file associations included.
 
 ```sh
-chmod +x Open-Markdown-Lane-0.23.0-linux-x64.AppImage
-./Open-Markdown-Lane-0.23.0-linux-x64.AppImage
+chmod +x Open-Markdown-Lane-0.24.5-x86_64.AppImage
+./Open-Markdown-Lane-0.24.5-x86_64.AppImage
 ```
+
+## Updates with AppImageUpdate
+
+Starting with 0.24.5, the AppImage embeds the standard GitHub Releases update channel and each release includes `Open-Markdown-Lane-VERSION-x86_64.AppImage.zsync`. The control file is included in `SHA256SUMS.txt`. Keep the AppImage in a directory you can write to.
+
+Use the upstream [AppImageUpdate tools](https://github.com/AppImageCommunity/AppImageUpdate/releases) to check and install an update. With `appimageupdatetool` on your PATH:
+
+```sh
+appimageupdatetool --check-for-update ./Open-Markdown-Lane-0.24.5-x86_64.AppImage
+appimageupdatetool --remove-old ./Open-Markdown-Lane-0.24.5-x86_64.AppImage
+```
+
+`--remove-old` removes the prior AppImage after the updater verifies the new file. Documents, recovery data and settings remain in their existing data directories. The embedded `latest` channel follows stable GitHub releases; AppImageUpdate discovers the matching x86_64 `.zsync` asset and reuses unchanged data blocks. Standard update discovery starts with 0.24.5; older downloads need a manual first upgrade.
+
+The release pipeline validates the reserved ELF update section through the actual runtime, checks the `.zsync` filename, download URL, size, SHA-1 and block checksums, and runs the real upstream updater against an isolated copy of the previous public AppImage. The pre-release HTTP fixture exercises range requests, delta reuse, no-update detection and failure retention. A separate check after publishing uses the real GitHub stable channel and public assets, then verifies the resulting SHA-256 and embedded discovery without an override. Tests use disposable files and leave original profiles untouched.
+
+See the [AppImage update specification](https://docs.appimage.org/packaging-guide/optional/updates.html) for the external update mechanism.
 
 ## FUSE runtime
 
@@ -18,7 +35,7 @@ sudo apt install libfuse2
 sudo apt install libfuse2t64
 ```
 
-To inspect a real mount, run `./Open-Markdown-Lane-0.23.0-linux-x64.AppImage --appimage-mount`. While it remains running, inspect the printed directory with `findmnt --target /printed/mountpoint`. Its filesystem type should start with `fuse`. Press Ctrl+C to unmount. This is different from `--appimage-extract`.
+To inspect a real mount, run `./Open-Markdown-Lane-0.24.5-x86_64.AppImage --appimage-mount`. While it remains running, inspect the printed directory with `findmnt --target /printed/mountpoint`. Its filesystem type should start with `fuse`. Press Ctrl+C to unmount. This is different from `--appimage-extract`.
 
 ## Ubuntu's user namespace restriction
 
@@ -31,7 +48,7 @@ Save this as `/etc/apparmor.d/open-markdown-lane-appimage`, replacing the exampl
 ```text
 abi <abi/4.0>,
 include <tunables/global>
-profile open-markdown-lane-appimage "/absolute/path/Open-Markdown-Lane-0.23.0-linux-x64.AppImage" flags=(unconfined) {
+profile open-markdown-lane-appimage "/absolute/path/Open-Markdown-Lane-0.24.5-x86_64.AppImage" flags=(unconfined) {
   userns,
 }
 ```

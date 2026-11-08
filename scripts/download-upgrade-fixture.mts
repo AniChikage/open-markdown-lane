@@ -9,10 +9,10 @@ interface Asset {name: string; browser_download_url: string}
 export function selectUpgradeAssets(release: {tag_name: string; draft: boolean; prerelease: boolean; assets: Asset[]}, platform: string) {
   assert.match(release.tag_name, /^v\d+\.\d+\.\d+$/);
   assert.equal(release.draft || release.prerelease, false);
-  assert.ok(platform === "linux" || platform === "windows");
-  const suffix = platform === "linux" ? "linux-x64.deb" : "windows-x64-Setup.exe";
+  assert.ok(platform === "linux" || platform === "windows" || platform === 'appimage');
+  const suffixes = platform === 'appimage' ? ['x86_64.AppImage','linux-x64.AppImage'] : [platform === "linux" ? "linux-x64.deb" : "windows-x64-Setup.exe"];
   const version = release.tag_name.slice(1);
-  const installers = release.assets.filter(a => ["Open-Typora", "Open-Markdown-Lane"].some(prefix => a.name === `${prefix}-${version}-${suffix}`));
+  const installers = release.assets.filter(a => ["Open-Typora", "Open-Markdown-Lane"].some(prefix => suffixes.some(suffix=>a.name === `${prefix}-${version}-${suffix}`)));
   const sums = release.assets.filter(a => a.name === "SHA256SUMS.txt");
   assert.equal(installers.length, 1, "Expected exactly one previous installer");
   assert.equal(sums.length, 1, "Expected one release checksum manifest");

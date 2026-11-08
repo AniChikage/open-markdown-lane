@@ -39,7 +39,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - name: Install desktop runtime libraries
-        run: sudo apt-get update && sudo apt-get install -y xvfb libgtk-3-0 libnss3 libasound2 libgbm1 libxss1 libxtst6 xdg-utils desktop-file-utils libglib2.0-bin dbus-x11 kde-cli-tools fonts-noto-cjk pandoc libreoffice-writer libfuse2 gnome-keyring libsecret-tools
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgtk-3-0 libnss3 libasound2 libgbm1 libxss1 libxtst6 xdg-utils desktop-file-utils libglib2.0-bin dbus-x11 kde-cli-tools fonts-noto-cjk pandoc libreoffice-writer libfuse2 gnome-keyring libsecret-tools zsync
       - name: Prepare real FUSE device
         run: sudo modprobe fuse && test -c /dev/fuse
       - name: Prepare actual PDF content validation
@@ -56,6 +56,13 @@ jobs:
           xvfb-run -a dbus-run-session -- node tests/branding-secrets.mts
       - name: Build Linux x64 DEB and AppImage
         run: npm run package:linux
+      - name: Verify real AppImageUpdate delta transfer, no-update detection and corruption refusal
+        run: |
+          node scripts/download-upgrade-fixture.mts appimage
+          node tests/appimage-updates.mts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPEN_MARKDOWN_LANE_QA_DIR: ${{ runner.temp }}/open-markdown-lane-linux-qa/appimage-update
       - name: Verify rename upgrade preserves drafts and settings
         run: xvfb-run -a npm run test:branding
       - name: Verify current public linux upgrade fixture
@@ -80,6 +87,7 @@ jobs:
           path: |
             release/linux/*.deb
             release/linux/*.AppImage
+            release/linux/*.AppImage.zsync
             release/linux/SHA256SUMS-linux-x64.txt
           if-no-files-found: error
           retention-days: 7
@@ -262,7 +270,7 @@ jobs:
           cd ../..
           python3 - <<'PYPROFILE'
           import os,pathlib,json
-          root=pathlib.Path(os.environ['RUNNER_TEMP']);version=json.loads(pathlib.Path('package.json').read_text())['version'];image=pathlib.Path('release/linux',f'Open-Markdown-Lane-{version}-linux-x64.AppImage').resolve();image.chmod(0o755)
+          root=pathlib.Path(os.environ['RUNNER_TEMP']);version=json.loads(pathlib.Path('package.json').read_text())['version'];image=pathlib.Path('release/linux',f'Open-Markdown-Lane-{version}-x86_64.AppImage').resolve();image.chmod(0o755)
           (root/'open-markdown-lane-appimage.apparmor').write_text('abi <abi/4.0>,\ninclude <tunables/global>\nprofile open-markdown-lane-appimage-ci "'+str(image)+'" flags=(unconfined) {\n  userns,\n}\n')
           with open(os.environ['GITHUB_ENV'],'a') as out:out.write('OPEN_MARKDOWN_LANE_APPIMAGE='+str(image)+'\n')
           PYPROFILE
@@ -336,8 +344,39 @@ jobs:
           else
             gh release create "$RELEASE_TAG" --draft --verify-tag --title "Open Markdown Lane ${RELEASE_TAG#v}" --notes-file docs/release-notes.md
           fi
-          gh release upload "$RELEASE_TAG" release-assets/*.dmg release-assets/*-Setup.exe release-assets/*.zip release-assets/*.deb release-assets/*.AppImage release-assets/SHA256SUMS.txt
+          gh release upload "$RELEASE_TAG" release-assets/*.dmg release-assets/*-Setup.exe release-assets/*.zip release-assets/*.deb release-assets/*.AppImage release-assets/*.AppImage.zsync release-assets/SHA256SUMS.txt
           gh release edit "$RELEASE_TAG" --draft=false --latest
       - name: Retire legacy releases after verifying all published replacement assets
         if: env.RELEASE_TAG == 'v0.23.0'
         run: node scripts/retire-legacy-releases.mts
+
+  appimage-public-update:
+    needs: publish
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.create_tag && github.sha || inputs.tag || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: linux-acceptance
+          path: prior-acceptance
+      - name: Verify the public GitHub stable channel with the official updater
+        run: |
+          prior_tag=$(node -p "JSON.parse(require('fs').readFileSync('prior-acceptance/appimage-update/appimage-update-results.json')).priorVersion")
+          node tests/appimage-public-update.mts "$prior_tag"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPEN_MARKDOWN_LANE_QA_DIR: ${{ runner.temp }}/open-markdown-lane-public-update-qa
+      - name: Save public update evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: appimage-public-update-acceptance
+          path: ${{ runner.temp }}/open-markdown-lane-public-update-qa
+          retention-days: 7

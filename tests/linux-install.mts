@@ -5,6 +5,7 @@ import { readFile, mkdir, mkdtemp, stat, writeFile, rm } from "node:fs/promises"
 import path from "node:path";
 import os from "node:os";
 import pkg from "../package.json" with {type:"json"};
+import {appImageName} from '../scripts/appimage-update.mts';
 
 assert.equal(process.platform,"linux");
 const qa = process.env.OPEN_MARKDOWN_LANE_QA_DIR || path.join(os.tmpdir(),"open-markdown-lane-linux-qa");
@@ -43,7 +44,7 @@ assert.equal(createHash("sha256").update(await readFile(retained.session)).diges
 
 // Extract the AppImage to test its actual payload without requiring FUSE on a
 // headless runner. Do not disable Chromium's sandbox in either distribution.
-const image = path.resolve(`release/linux/Open-Markdown-Lane-${pkg.version}-linux-x64.AppImage`);
+const image = path.resolve('release/linux',appImageName(pkg.version));
 const extraction = await mkdtemp(path.join(os.tmpdir(),"open-markdown-lane-appimage-"));
 run(image,["--appimage-extract"],{cwd:extraction,stdio:"ignore"});
 const sandbox = path.join(extraction,"squashfs-root/chrome-sandbox");

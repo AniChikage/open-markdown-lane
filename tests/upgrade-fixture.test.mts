@@ -20,3 +20,10 @@ test('upgrade fixture requires one matching SHA256 and rejects corrupt bytes',()
  assert.throws(()=>verifyUpgradeChecksum(row+row,name,bytes));
  assert.throws(()=>verifyUpgradeChecksum('not a checksum',name,bytes));
 });
+test('AppImage upgrade fixtures support the old name and the architecture-only name',()=>{
+ for(const suffix of ['linux-x64.AppImage','x86_64.AppImage']) {
+  const image='Open-Markdown-Lane-0.23.0-'+suffix;
+  assert.equal(selectUpgradeAssets({...release,assets:[asset(image),asset('SHA256SUMS.txt')]},'appimage').installer.name,image);
+ }
+ assert.throws(()=>selectUpgradeAssets({...release,assets:[asset('Open-Markdown-Lane-0.23.0-linux-x64.AppImage'),asset('Open-Markdown-Lane-0.23.0-x86_64.AppImage'),asset('SHA256SUMS.txt')]},'appimage'));
+});
