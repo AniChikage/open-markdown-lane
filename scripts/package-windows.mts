@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import pkg from "../package.json" with { type: "json" };
 import { prepareElectronApplication } from "./prepare-electron.mts";
+import { verifiedElectronArchive } from './prepare-release-downloads.mts';
 
 if (process.platform !== "win32" || process.arch !== "x64") throw new Error("Build Windows x64 releases on a Windows x64 machine.");
 execFileSync("pwsh.exe",["-NoProfile","-ExecutionPolicy","Bypass","-File","scripts/build-windows-preview.ps1"],{stdio:"inherit"});
@@ -18,6 +19,8 @@ await build({
     files: ["**/*"], asar: true, npmRebuild: false,
     extraResources: [{from:"build/windows-preview",to:"markdown-preview",filter:["MarkdownPreview.dll","Microsoft-WebView2-LICENSE.txt","dist/**/*"]}],
     electronVersion: pkg.devDependencies.electron,
+    electronDist: await verifiedElectronArchive(),
+    afterPack: async ({appOutDir}) => { for (const file of ["resources/default_app.asar", "version"]) await rm(path.join(appOutDir,file),{force:true}); },
     fileAssociations: pkg.build.fileAssociations,
     win: { icon: "build/icon.ico", artifactName: "Open-Markdown-Lane-${version}-windows-${arch}.${ext}" },
     nsis: {

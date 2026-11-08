@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import pkg from "../package.json" with { type: "json" };
 import { prepareElectronApplication } from "./prepare-electron.mts";
+import { verifiedElectronArchive } from './prepare-release-downloads.mts';
 import {execFileSync} from 'node:child_process';
 import {appImageName,appImageUpdateInformation,appImageDownloadURL,embedAppImageUpdateInformation,validateZsync} from './appimage-update.mts';
 
@@ -18,7 +19,9 @@ await build({
     directories: { app: application, output: "release/linux" },
     files: ["**/*"], asar: true, npmRebuild: false,
     electronVersion: pkg.devDependencies.electron,
+    electronDist: await verifiedElectronArchive(),
     afterPack: async ({appOutDir}) => {
+      for (const file of ["resources/default_app.asar", "version"]) await rm(path.join(appOutDir,file),{force:true});
       const launcher = path.join(appOutDir, "AppRun");
       await copyFile("scripts/linux-AppRun.sh", launcher);
       await chmod(launcher, 0o755);

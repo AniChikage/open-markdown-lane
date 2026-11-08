@@ -37,6 +37,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Prepare verified official release dependencies
+        run: node scripts/prepare-release-downloads.mts
+        env:
+          GH_TOKEN: ${{ github.token }}
       - run: npm run typecheck
       - name: Install desktop runtime libraries
         run: sudo apt-get update && sudo apt-get install -y xvfb libgtk-3-0 libnss3 libasound2 libgbm1 libxss1 libxtst6 xdg-utils desktop-file-utils libglib2.0-bin dbus-x11 kde-cli-tools fonts-noto-cjk pandoc libreoffice-writer libfuse2 gnome-keyring libsecret-tools zsync
@@ -105,6 +109,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Prepare verified official release dependencies
+        run: node scripts/prepare-release-downloads.mts
+        env:
+          GH_TOKEN: ${{ github.token }}
       - run: npm run typecheck
       - name: Install conversion tools for actual DOC, RTF and media acceptance
         shell: pwsh
@@ -212,6 +220,10 @@ jobs:
       - name: Check Apple Silicon runner
         run: node -e "if(process.platform !== 'darwin' || process.arch !== 'arm64') process.exit(1)"
       - run: npm ci
+      - name: Prepare verified official release dependencies
+        run: node scripts/prepare-release-downloads.mts
+        env:
+          GH_TOKEN: ${{ github.token }}
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:native
