@@ -16,7 +16,10 @@
 >
 > If you can afford it, please **[buy Typora](https://store.typora.io/)** and support its official developers. Visit **[typora.io](https://typora.io/)** for the official product and support.
 
-![Open Markdown Lane — Markdown workspace with document outline](docs/images/hero.png)
+<p align="center">
+  <a href="docs/images/feature-tour.mp4"><img src="docs/images/feature-tour-poster.png" alt="Open Markdown Lane — feature tour (52 seconds)" width="820"></a><br>
+  <sub><a href="docs/images/feature-tour.mp4">▶ Watch the 52-second feature tour</a> · MP4, 39 MB</sub>
+</p>
 
 Open Markdown Lane is an open-source Markdown editor inspired by Typora's inline editing experience. Write directly in the rendered document, switch to source when you need it, and save ordinary `.md` files in your own folders.
 
@@ -45,12 +48,7 @@ Open Markdown Lane is an open-source Markdown editor inspired by Typora's inline
 
 See the [feature checklist](docs/feature-parity.md) for coverage and known differences.
 
-<p align="center">
-  <a href="docs/images/feature-tour.mp4"><img src="docs/images/feature-tour-poster.png" alt="Open Markdown Lane — feature tour (52 seconds)" width="820"></a><br>
-  <sub><a href="docs/images/feature-tour.mp4">▶ Watch the 52-second feature tour</a> · MP4, 39 MB</sub>
-</p>
-
-[Watch the editing demo](docs/images/editing-demo.gif) · [Full feature tour (MP4, 52 s)](docs/images/feature-tour.mp4) · [Project introduction and walkthrough (中文)](docs/introducing-open-markdown-lane.zh-CN.md)
+[Watch the editing demo](docs/images/editing-demo.gif) · [Project introduction and walkthrough (中文)](docs/introducing-open-markdown-lane.zh-CN.md)
 
 Trying the preview? [Report a problem](https://github.com/AniChikage/open-markdown-lane/issues/new?template=bug_report.yml) or [suggest a feature](https://github.com/AniChikage/open-markdown-lane/issues/new?template=feature_request.yml). Include your platform, app version, and a small reproducible example.
 

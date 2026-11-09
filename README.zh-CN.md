@@ -16,7 +16,10 @@
 >
 > **有能力的朋友，请优先[购买正版 Typora](https://store.typora.io/)，支持官方开发者。** 官方产品与支持请认准 **[typora.io](https://typora.io/)**。
 
-![Open Markdown Lane 产品展示：标签页、文档排版与右侧大纲](docs/images/hero.png)
+<p align="center">
+  <a href="docs/images/feature-tour.mp4"><img src="docs/images/feature-tour-poster.png" alt="Open Markdown Lane 功能演示（52 秒）" width="820"></a><br>
+  <sub><a href="docs/images/feature-tour.mp4">▶ 观看 52 秒功能演示视频</a> · MP4，39 MB</sub>
+</p>
 
 Open Markdown Lane 是一款开源 Markdown 编辑器，受 Typora 的行内编辑体验启发。直接修改排版后的正文，需要时切换源码，文档以普通 `.md` 文件保存在自己的文件夹中。
 
@@ -46,12 +49,7 @@ Open Markdown Lane 是一款开源 Markdown 编辑器，受 Typora 的行内编�
 
 具体覆盖范围与已知差异见[功能清单](docs/feature-parity.md)。
 
-<p align="center">
-  <a href="docs/images/feature-tour.mp4"><img src="docs/images/feature-tour-poster.png" alt="Open Markdown Lane 功能演示（52 秒）" width="820"></a><br>
-  <sub><a href="docs/images/feature-tour.mp4">▶ 观看 52 秒功能演示视频</a> · MP4，39 MB</sub>
-</p>
-
-[观看实际编辑演示](docs/images/editing-demo.gif) · [完整功能演示视频（MP4，52 秒）](docs/images/feature-tour.mp4) · [阅读项目介绍与操作过程](docs/introducing-open-markdown-lane.zh-CN.md)
+[观看实际编辑演示](docs/images/editing-demo.gif) · [阅读项目介绍与操作过程](docs/introducing-open-markdown-lane.zh-CN.md)
 
 试用中遇到问题，可以[报告问题](https://github.com/AniChikage/open-markdown-lane/issues/new?template=bug_report.yml)或[提出功能建议](https://github.com/AniChikage/open-markdown-lane/issues/new?template=feature_request.yml)。请附上系统、应用版本和最小复现示例。
 
