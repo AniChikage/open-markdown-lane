@@ -16,10 +16,9 @@
 >
 > If you can afford it, please **[buy Typora](https://store.typora.io/)** and support its official developers. Visit **[typora.io](https://typora.io/)** for the official product and support.
 
-<p align="center">
-  <a href="docs/images/feature-tour.mp4"><img src="docs/images/feature-tour-poster.png" alt="Open Markdown Lane — feature tour (52 seconds)" width="820"></a><br>
-  <sub><a href="docs/images/feature-tour.mp4">▶ Watch the 52-second feature tour</a> · MP4, 39 MB</sub>
-</p>
+https://github.com/user-attachments/assets/2cf16cf0-3c6b-4e5d-9c50-d8e9c6100338
+
+<sub>Feature tour · 52 seconds</sub>
 
 Open Markdown Lane is an open-source Markdown editor inspired by Typora's inline editing experience. Write directly in the rendered document, switch to source when you need it, and save ordinary `.md` files in your own folders.
 

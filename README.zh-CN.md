@@ -16,10 +16,9 @@
 >
 > **有能力的朋友，请优先[购买正版 Typora](https://store.typora.io/)，支持官方开发者。** 官方产品与支持请认准 **[typora.io](https://typora.io/)**。
 
-<p align="center">
-  <a href="docs/images/feature-tour.mp4"><img src="docs/images/feature-tour-poster.png" alt="Open Markdown Lane 功能演示（52 秒）" width="820"></a><br>
-  <sub><a href="docs/images/feature-tour.mp4">▶ 观看 52 秒功能演示视频</a> · MP4，39 MB</sub>
-</p>
+https://github.com/user-attachments/assets/2cf16cf0-3c6b-4e5d-9c50-d8e9c6100338
+
+<sub>功能演示 · 52 秒</sub>
 
 Open Markdown Lane 是一款开源 Markdown 编辑器，受 Typora 的行内编辑体验启发。直接修改排版后的正文，需要时切换源码，文档以普通 `.md` 文件保存在自己的文件夹中。
 
