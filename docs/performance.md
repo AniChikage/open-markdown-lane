@@ -82,7 +82,7 @@ Windows acceptance of the initial 0.16.3 candidate caught an undo-group bug afte
 
 A document now keeps its text and bounded delta history independently of editor DOM. The workspace retains visible panes, active batch targets and pending image imports, plus at most two warm background tabs. Warm admission uses UTF-16 text estimates (1 MiB per background tab, 2 MiB combined), and idle views expire after 30 seconds on the periodic check. These are cache admission thresholds, not limits on document editing or total app memory. Unloading drops DOM, CodeMirror instances, listeners and eligible parsed caches; switching back rebuilds presentation while retaining session undo/redo.
 
-Two views of the same document share one model and history. Source peers receive changed spans on ordinary edits instead of a whole-document CodeMirror replacement. Each view retains its mode, caret and scrolling. Metadata is captured with session persistence without rerendering the entire React app for every caret movement. Composition defers peer updates until commit.
+Two views of the same document share one model and history. Source peers receive changed spans on ordinary edits instead of a whole-document CodeMirror replacement. Each view retains its mode, caret and scrolling. Metadata is captured with session persistence without rerendering the entire React app for every caret movement. Composition defers peer updates until commit. Text and view metadata share one trailing recovery timer, avoiding two full-document serializations after the same edit. An installed-editor IPC check verifies one idle snapshot for a shared document over 5 MiB.
 
 A single macOS arm64 Electron comparison used the same 12 files (500 repeated Markdown paragraphs per file, plus Chinese text, a table and code), visited each tab, then explicitly collected renderer garbage. The baseline loaded the compiled 0.24.6 frontend through the same isolated Electron host. No user documents or model configuration were used.
 
@@ -90,8 +90,8 @@ A single macOS arm64 Electron comparison used the same 12 files (500 repeated Ma
 | --- | ---: | ---: |
 | Mounted document editors after visiting 12 tabs | 12 | 3 |
 | Whole-window DOM elements | 61,046 | 15,630 |
-| Renderer JavaScript used heap after GC | 17.52 MiB | 13.75 MiB |
-| Chromium embedder heap diagnostic after GC | 25.45 MiB | 11.15 MiB |
+| Renderer JavaScript used heap after GC | 17.52 MiB | 13.88 MiB |
+| Chromium embedder heap diagnostic after GC | 25.45 MiB | 11.19 MiB |
 
 This is one controlled fixture run. Heap diagnostics are **not process RSS**, total system memory or a cross-editor ranking. They exclude text/history growth in other workloads, external resources, GPU allocations and much of the host runtime. Switching back trades reconstruction time for fewer resident views. No universal memory reduction or typing-latency guarantee follows from this sample.
 

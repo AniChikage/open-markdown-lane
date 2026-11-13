@@ -42,15 +42,29 @@ async function saved(file: string,text: string | Buffer){await command('save');t
  await writeFile(path.join(qa,'huge-save-diagnostic.json'),JSON.stringify(state,null,2));console.log('SAVE-DIAGNOSTIC',JSON.stringify(state));throw error;
 }}
 async function pointCell(cell: import("playwright").Locator){await cell.click();await cell.evaluate((element: HTMLElement)=>{const range=document.createRange();range.selectNodeContents(element);range.collapse(false);const selection=getSelection()!;selection.removeAllRanges();selection.addRange(range);});}
+async function codeHistory(count:number,stateAt:(index:number)=>string,redo=false){
+ const known=new Map<string,number>();for(let index=0;index<count;index++)known.set(digest(stateAt(index)),index);
+ let current=redo?0:count-1,steps=0;
+ while(current!==(redo?count-1:0)){
+  assert.ok(++steps<count,'history must reach its exact endpoint within the number of input events');await command(redo?'redo':'undo');await command('save');let next=current;
+  await expect.poll(async()=>{const index=known.get(digest(await readFile(codeFile)));if(index!==undefined&&(redo?index>current:index<current)){next=index;return true;}return false;},{timeout:60000}).toBe(true);
+  current=next;
+ }
+ return steps;
+}
 async function editCode(){const editable=page.locator('.large-code.fence-editing .cm-content');if(!await editable.count()){const preview=page.locator('.large-code .code-preview .cm-content');await preview.click();}await expect(editable).toBeVisible();await editable.press(end);await editable.press('ArrowUp');await editable.press('End');return editable;}
 try{
  await launch();const started=Date.now();await open(codeFile);await expect(page.locator('.large-code .code-preview .cm-content')).toBeVisible({timeout:60000});console.log('PROBE: giant code opened');timings.codeOpenMs=Date.now()-started;
  assert.ok(await page.locator('.large-code .cm-line').count()<160);await expect(page.locator('.document-editor:not([hidden]) .source-surface')).toBeHidden();
  let editable=await editCode();const samples=[];for(let i=0;i<6;i++){const start=Date.now();await page.keyboard.insertText('中');await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));samples.push(Date.now()-start);}
  timings.codeTypingSamplesMs=samples;console.log('PROBE: giant code typed',JSON.stringify(samples));await saved(codeFile,code.replace('HUGE-CODE-END','HUGE-CODE-END'+'中'.repeat(6)));
- await editable.press(`${mod}+z`);await saved(codeFile,code);console.log('PROBE: giant code exact undo passed');checks.push('32+ MiB file opens through native dialog, renders a bounded code viewport, types and undoes without changing fence or surrounding bytes.');
+ // Timed inputs can be separated by the model's 800 ms history boundary on a
+ // busy runner. Check every group against exact whole-file prefix hashes;
+ // composition below still requires a single undo.
+ const prefix=(index:number)=>code.replace('HUGE-CODE-END','HUGE-CODE-END'+'中'.repeat(index));
+ const groups=await codeHistory(7,prefix);assert.equal(await codeHistory(7,prefix,true),groups);assert.equal(await codeHistory(7,prefix),groups);timings.codeTypingUndoGroups=groups;console.log('PROBE: giant code exact undo/redo passed',groups);checks.push('32+ MiB file opens through native dialog, renders a bounded code viewport, types and undoes/redoes each timed history group without changing fence or surrounding bytes.');
  editable=await editCode();const lineStarted=Date.now();await page.keyboard.press('Enter');await page.keyboard.insertText('const extra = `value`;');await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));timings.codeNewlineMs=Date.now()-lineStarted;
- await saved(codeFile,code.replace('HUGE-CODE-END','HUGE-CODE-END\nconst extra = `value`;'));await editable.press(`${mod}+z`);await saved(codeFile,code);
+ await saved(codeFile,code.replace('HUGE-CODE-END','HUGE-CODE-END\nconst extra = `value`;'));await codeHistory(3,index=>index===0?code:code.replace('HUGE-CODE-END','HUGE-CODE-END\n'+(index===2?'const extra = `value`;':'')));
  checks.push('A real Enter and backtick-containing code line in the 32+ MiB block undo to the exact original bytes.');
  editable=await editCode();const cdp=await page.context().newCDPSession(page);await cdp.send('Input.imeSetComposition',{text:'zhongguo',selectionStart:8,selectionEnd:8});await cdp.send('Input.insertText',{text:'中国'});await saved(codeFile,code.replace('HUGE-CODE-END','HUGE-CODE-END中国'));await editable.press(`${mod}+z`);await saved(codeFile,code);
  await page.screenshot({path:path.join(qa,'giant-code.png')});checks.push('Giant local code Chromium composition commits Chinese text and undoes once.');

@@ -31,12 +31,15 @@ export function useDocuments(canPrepare: () => boolean = () => true, captureView
   const inFlight = useRef(new Map<string, Promise<unknown>>());
   const closing = useRef(false);
   const viewPersist = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function rememberViews() {
+  function schedulePersist(delay: number) {
     if (viewPersist.current !== null) clearTimeout(viewPersist.current);
     viewPersist.current = setTimeout(() => {
       viewPersist.current = null;
       if (!closing.current && prepareEditor.current()) void persist(current.current).catch(notify);
-    }, 600);
+    }, delay);
+  }
+  function rememberViews() {
+    schedulePersist(current.current.documents.some(record => record.content.length > 300_000) ? 1200 : 600);
   }
   useEffect(() => () => { if (viewPersist.current !== null) clearTimeout(viewPersist.current); }, []);
   const closed = useRef<{ id: string; name: string }[]>([]);
@@ -102,14 +105,12 @@ export function useDocuments(canPrepare: () => boolean = () => true, captureView
   }, [documents, ready]);
   useEffect(() => {
     if (!ready) return;
-    const timer = setTimeout(() => {
-      if (closing.current) return;
-      void persist({ documents, activeId, workspace }).catch(notify);
-    }, documents.some(record => record.content.length > 300_000) ? 1200 : 500);
+    // Text, layout and caret updates share one trailing snapshot. Separate
+    // timers otherwise serialize the same multi-megabyte document twice.
+    schedulePersist(documents.some(record => record.content.length > 300_000) ? 1200 : 500);
     void host.setDirty(
       documents.some((record) => record.content !== record.savedContent),
     );
-    return () => clearTimeout(timer);
   }, [documents, activeId, workspace, ready]);
   useEffect(() => {
     localStorage.setItem("open-markdown-lane-autosave", String(autosave));

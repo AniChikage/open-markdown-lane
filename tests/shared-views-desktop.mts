@@ -88,11 +88,13 @@ try {
  // Exercise incremental source mirroring on a 5+ MiB code block, not just small text.
  const giant='# Twin large code\n\n```text\n'+('large code line 0123456789abcdef\n'.repeat(180000))+'TWIN-END\n```\n';
  const giantRecord:DocumentRecord={id:'shared-large',name:'Shared-large.md',path:null,content:giant,savedContent:'',diskHash:null,lineEnding:'\n'};
+ await app.evaluate(({ipcMain})=>{const handlers=Reflect.get(ipcMain,'_invokeHandlers') as Map<string,(...args:unknown[])=>Promise<unknown>>,original=handlers.get('document:persist')!;Reflect.set(globalThis,'sharedLargeSnapshots',0);ipcMain.removeHandler('document:persist');ipcMain.handle('document:persist',async(event,...args:unknown[])=>{const snapshot=args[0] as {documents:DocumentRecord[]};if(snapshot.documents.some(r=>r.id==='shared-large'&&r.content.startsWith('双视图中文😀')))Reflect.set(globalThis,'sharedLargeSnapshots',Number(Reflect.get(globalThis,'sharedLargeSnapshots'))+1);return original(event,...args);});});
  await page.evaluate(async record=>{const result=await window.desktop!.registerDraft(record);if(!result.ok)throw Error(result.error);},giantRecord);
  await app.evaluate(({BrowserWindow},record)=>BrowserWindow.getAllWindows()[0].webContents.send('app:command',{action:'opened',document:record}),giantRecord);
  await expect(page.getByRole('tab',{name:'Shared-large.md',exact:true})).toBeVisible();await page.getByRole('button',{name:'同一文档双视图',exact:true}).click();await command('other-pane');
  const giantPane=page.locator('.document-editor[data-view-id="mirror:shared-large"]'),giantInput=giantPane.locator('.source-surface .cm-content');await expect(giantInput).toBeVisible();await giantInput.focus();await page.keyboard.press(`${mod}+Home`);await page.keyboard.insertText('双视图中文😀');
  await expect.poll(async()=>(await recovery()).documents.find((r:DocumentRecord)=>r.id==='shared-large')?.content,{timeout:20000}).toBe('双视图中文😀'+giant);
+ await page.waitForTimeout(1700);assert.equal(await app.evaluate(()=>Reflect.get(globalThis,'sharedLargeSnapshots')),1,'text and view metadata share one idle recovery snapshot');
  assert.ok(await giantPane.locator('.cm-line').count()<200,'large source twin stays virtualized');await command('other-pane');await command('undo');
  await expect.poll(async()=>(await recovery()).documents.find((r:DocumentRecord)=>r.id==='shared-large')?.content,{timeout:20000}).toBe(giant);
  console.log('CHECK',checks.length+1);checks.push('5+ MiB shared code uses a bounded source viewport, mirrors Chinese/emoji edits incrementally and undoes from the rendered pane to exact recovery bytes.');
