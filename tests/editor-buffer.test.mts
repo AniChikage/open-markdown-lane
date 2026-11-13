@@ -51,4 +51,6 @@ test('same-document layouts restore with a single tab and migrate to different d
   assert.equal(normalizeWorkspace({...layout,primaryId:'missing'},['a'],'a'),null);
   assert.deepEqual(activateWorkspace(layout,'a','b'),{...layout,secondaryId:'b',sameDocument:false});
   assert.deepEqual(viewState({rendered:false,anchor:-1,head:999,richScroll:-5,sourceScroll:NaN},10), {rendered:false,anchor:0,head:10,richScroll:0,sourceScroll:0});
+  assert.equal(viewState(undefined,100).anchor,100,'legacy small documents retain their end caret');
+  assert.equal(viewState(undefined,1_000_000).anchor,0,'large documents retain their start caret');
 });

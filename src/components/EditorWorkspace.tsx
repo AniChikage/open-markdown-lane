@@ -110,7 +110,11 @@ export function EditorWorkspace(props: Props) {
   const mounted = props.documents.filter(record => resident.has(record.id));
   for (const record of mounted) if (!buffers.current.has(record.id)) buffers.current.set(record.id, new EditorBuffer(record));
   const isMirror = !!layout?.sameDocument && layout.primaryId === layout.secondaryId;
-  if (isMirror) buffers.current.get(layout.primaryId)?.share();
+  if (isMirror) {
+    const buffer = buffers.current.get(layout.primaryId)!;
+    buffer.share();
+    buffer.views.secondary ||= { ...buffer.views.primary!, rendered: false, sourceScroll: 0 };
+  }
   const views = mounted.map(record => ({ record, mirror: false }));
   if (isMirror) views.push({ record: props.documents.find(record => record.id === layout.primaryId)!, mirror: true });
   useLayoutEffect(() => { tabs.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({block:"nearest",inline:"nearest"}); }, [props.activeId]);

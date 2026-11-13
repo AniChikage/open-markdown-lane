@@ -7,7 +7,8 @@ export const mirrorKey = (id: string) => 'mirror:' + id;
 export function viewState(value?: EditorViewState, length = 0): EditorViewState {
   const position = (n: unknown) => typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.min(length, Math.trunc(n))) : 0;
   const scroll = (n: unknown) => typeof n === 'number' && Number.isFinite(n) ? Math.max(0, n) : 0;
-  return { rendered: value?.rendered !== false, anchor: position(value?.anchor), head: position(value?.head), richScroll: scroll(value?.richScroll), sourceScroll: scroll(value?.sourceScroll) };
+  const initial = length > 300_000 ? 0 : length;
+  return { rendered: value?.rendered !== false, anchor: value ? position(value.anchor) : initial, head: value ? position(value.head) : initial, richScroll: scroll(value?.richScroll), sourceScroll: scroll(value?.sourceScroll) };
 }
 
 /** One buffer/history per document; views own only their presentation state. */
@@ -25,7 +26,7 @@ export class EditorBuffer {
   private previousRevision = 0;
   constructor(record: DocumentRecord) {
     this.model = new MarkdownDocument(record.content, record.lineEnding);
-    this.views = { ...record.editorViews };
+    this.views = { primary: viewState(record.editorViews?.primary, this.model.text.length), ...record.editorViews };
     this.previousText = this.model.text;
   }
   attach(slot: ViewSlot, listener: (change?: SharedChange) => void, composing = () => false) {
