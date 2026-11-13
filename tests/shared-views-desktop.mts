@@ -96,6 +96,9 @@ try {
  assert.ok(await giantPane.locator('.cm-line').count()<200,'large source twin stays virtualized');await command('other-pane');await command('undo');
  await expect.poll(async()=>(await recovery()).documents.find((r:DocumentRecord)=>r.id==='shared-large')?.content,{timeout:20000}).toBe(giant);
  console.log('CHECK',checks.length+1);checks.push('5+ MiB shared code uses a bounded source viewport, mirrors Chinese/emoji edits incrementally and undoes from the rendered pane to exact recovery bytes.');
+ const beforeClosing=await saved();await page.getByRole('tab',{name:'Tab-0.md',exact:true}).click();await page.getByRole('button',{name:'同一文档双视图',exact:true}).click();await expect(pane(true)).toBeVisible();
+ await page.getByRole('button',{name:'关闭标签 Tab-0.md',exact:true}).click();await expect(page.getByRole('tab',{name:'Tab-0.md',exact:true})).toHaveCount(0);await expect(page.locator('.document-editor:not([hidden])')).toHaveCount(1);await expect.poll(async()=>(await recovery()).workspace).toBeNull();assert.equal(await saved(),beforeClosing);
+ console.log('CHECK',checks.length+1);checks.push('Closing the shared document removes both views without splitting unrelated tabs or rewriting the closed file.');
  await expect(page.locator('vite-error-overlay')).toHaveCount(0);assert.deepEqual(errors,[]);
  await writeFile(path.join(qa,'shared-views-results.json'),JSON.stringify({checks,errors,profile,resident,dom,heap},null,2));console.log(checks.map(c=>'PASS: '+c).join('\n'));
  }

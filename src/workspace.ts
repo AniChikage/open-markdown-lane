@@ -4,6 +4,7 @@ export function normalizeWorkspace(value: unknown, ids: string[], activeId: stri
   if (!value || typeof value !== "object" || !ids.length) return null;
   const layout = value as WorkspaceLayout;
   if (layout.direction !== "columns" && layout.direction !== "rows") return null;
+  if (layout.sameDocument && (layout.primaryId !== layout.secondaryId || !ids.includes(layout.primaryId))) return null;
   if (layout.sameDocument && layout.primaryId === layout.secondaryId && ids.includes(layout.primaryId)) {
     if (activeId !== layout.primaryId && ids.includes(activeId)) return { ...layout, primaryId: activeId, sameDocument: false, activePane: 'primary' };
     return { ...layout, ratio: Number.isFinite(layout.ratio) ? Math.max(.2, Math.min(.8, layout.ratio)) : .5, activePane: layout.activePane === 'secondary' ? 'secondary' : 'primary' };

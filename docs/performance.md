@@ -90,8 +90,8 @@ A single macOS arm64 Electron comparison used the same 12 files (500 repeated Ma
 | --- | ---: | ---: |
 | Mounted document editors after visiting 12 tabs | 12 | 3 |
 | Whole-window DOM elements | 61,046 | 15,630 |
-| Renderer JavaScript used heap after GC | 17.52 MiB | 13.65 MiB |
-| Chromium embedder heap diagnostic after GC | 25.45 MiB | 11.12 MiB |
+| Renderer JavaScript used heap after GC | 17.52 MiB | 13.75 MiB |
+| Chromium embedder heap diagnostic after GC | 25.45 MiB | 11.15 MiB |
 
 This is one controlled fixture run. Heap diagnostics are **not process RSS**, total system memory or a cross-editor ranking. They exclude text/history growth in other workloads, external resources, GPU allocations and much of the host runtime. Switching back trades reconstruction time for fewer resident views. No universal memory reduction or typing-latency guarantee follows from this sample.
 

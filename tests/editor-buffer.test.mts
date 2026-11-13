@@ -54,3 +54,9 @@ test('same-document layouts restore with a single tab and migrate to different d
   assert.equal(viewState(undefined,100).anchor,100,'legacy small documents retain their end caret');
   assert.equal(viewState(undefined,1_000_000).anchor,0,'large documents retain their start caret');
 });
+test('closing or removing a shared document clears its split without arranging unrelated tabs', () => {
+  const layout = {primaryId:'closed',secondaryId:'closed',sameDocument:true,direction:'columns' as const,ratio:.4};
+  assert.equal(normalizeWorkspace(layout,['a','b'],'a'),null);
+  assert.equal(normalizeWorkspace({...layout,secondaryId:'b'},['a','b'],'a'),null);
+  assert.deepEqual(normalizeWorkspace({primaryId:'missing',secondaryId:'b',direction:'columns',ratio:.4},['a','b'],'a'),{primaryId:'a',secondaryId:'b',direction:'columns',ratio:.4});
+});
