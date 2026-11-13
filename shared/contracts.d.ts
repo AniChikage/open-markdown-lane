@@ -10,9 +10,11 @@ export interface EditBatchFile { documentId: string; name: string; path: string 
 export interface EditBatchSummary { id: string; createdAt: number; instruction: string; state: 'prepared' | 'applied'; names: string[] }
 export interface EditBatch extends EditBatchSummary { files: EditBatchFile[] }
 export interface EditBatchInput { instruction: string; files: { documentId: string; before: string; after: string }[] }
-export interface WorkspaceLayout { primaryId: string; secondaryId: string; direction: "columns" | "rows"; ratio: number }
+export interface EditorViewState { rendered: boolean; anchor: number; head: number; richScroll: number; sourceScroll: number }
+export interface WorkspaceLayout { primaryId: string; secondaryId: string; direction: "columns" | "rows"; ratio: number; sameDocument?: boolean; activePane?: "primary" | "secondary"; reversed?: boolean }
 export interface BackgroundAsset { name: string; dataUrl: string }
 export interface DocumentRecord {
+  editorViews?: { primary?: EditorViewState; secondary?: EditorViewState };
   id: string;
   path: string | null;
   name: string;
@@ -61,6 +63,7 @@ export interface DiskChange {
   missing?: boolean;
 }
 export interface SessionSnapshot {
+  closedIds?: string[];
   workspace?: WorkspaceLayout | null;
   documents: DocumentRecord[];
   activeId: string;

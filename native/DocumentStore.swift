@@ -13,6 +13,7 @@ struct NativeFailure: Error, LocalizedError {
   var errorDescription: String? { message }
 }
 struct DocumentRecord: Codable {
+  var editorViews: [String: EditorViewState]?
   var id: String
   var path: String?
   var name: String
@@ -25,11 +26,21 @@ struct DocumentRecord: Codable {
   var encoding: String?
   var historyWarning: String?
 }
+struct EditorViewState: Codable {
+  var rendered: Bool
+  var anchor: Int
+  var head: Int
+  var richScroll: Double
+  var sourceScroll: Double
+}
 struct WorkspaceLayoutState: Codable {
   var primaryId: String
   var secondaryId: String
   var direction: String
   var ratio: Double
+  var sameDocument: Bool?
+  var activePane: String?
+  var reversed: Bool?
 }
 struct SessionRecord: Codable {
   var version: Int = 1
@@ -38,6 +49,7 @@ struct SessionRecord: Codable {
   var folder: String?
   var restoreError: String?
   var workspace: WorkspaceLayoutState?
+  var closedIds: [String]?
 }
 func hashData(_ data: Data) -> String {
   SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
@@ -90,6 +102,7 @@ final class DocumentStore {
   var activeId: String?
   var closedRecords = [String: DocumentRecord]()
   private var closedOrder = [String]()
+  private var persistedIDs = Set<String>()
   // Asset/conversion budget only. Markdown open/save/recovery has no fixed byte cap.
   static let maxBytes = 20 * 1024 * 1024
   init(_ directory: URL, historyDirectory: URL? = nil) { dataDirectory = directory; versions = VersionStore(historyDirectory ?? directory) }
@@ -329,6 +342,7 @@ final class DocumentStore {
       var owned = try require(item.id)
       owned.content = item.content
       owned.conflict = item.conflict
+      owned.editorViews = item.editorViews
       records[item.id] = owned
       documents.append(owned)
     }
@@ -338,14 +352,18 @@ final class DocumentStore {
     try atomicWrite(
       dataDirectory.appendingPathComponent("session.json"), JSONEncoder().encode(session))
     let openIDs = Set(documents.map { $0.id })
-    for (id, record) in records where !openIDs.contains(id) {
+    // Newly registered files may not have reached the renderer yet. An older
+    // snapshot must not revoke their ownership while an open request is in flight.
+    let retired = persistedIDs.union(incoming.closedIds ?? []).subtracting(openIDs)
+    for id in retired {
+      guard let record = records.removeValue(forKey: id) else { continue }
       var clean = record
       clean.content = record.savedContent
       if clean.path != nil { clean.content = ""; clean.savedContent = "" }
       closedRecords[id] = clean; closedOrder.removeAll { $0 == id }; closedOrder.append(id)
     }
     while closedOrder.count > 20 { closedRecords.removeValue(forKey: closedOrder.removeFirst()) }
-    records = Dictionary(uniqueKeysWithValues: documents.map { ($0.id, $0) })
+    persistedIDs = openIDs
   }
   func restore() throws -> SessionRecord? {
     let file = dataDirectory.appendingPathComponent("session.json")
@@ -372,6 +390,7 @@ final class DocumentStore {
         documents.append(record)
       }
       session.documents = documents
+      persistedIDs = Set(documents.map { $0.id })
       activeId = session.activeId
       if let path = session.folder { _ = try? scan(URL(fileURLWithPath: path)) }
       session.folder = folder?.path

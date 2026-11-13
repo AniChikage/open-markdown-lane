@@ -9,6 +9,7 @@ const uploads = [];
 const clipboardOnly = process.argv.includes("--clipboard");
 const aiOnly = process.argv.includes("--ai");
 const localeOnly = process.argv.includes('--locale');
+const sharedViewsOnly = process.argv.includes('--shared-views');
 const typographyOnly = process.argv.includes('--typography');
 const aiRequests: string[] = [];
 const server = createServer(async (request, response) => {
@@ -60,7 +61,7 @@ try {
   await cp("build/runtime/shared/plugin-loader.mjs", path.join(resources, "plugin-loader.js"));
   await cp("tests/fixtures/plugin-package", path.join(resources, "Plugin-package-fixture"), {recursive:true});
   for(let i=0;i<3;i++)await writeFile(path.join(resources,"Plugin-package-fixture",`padding-${i}.js`),"/*"+"x".repeat(1_500_000)+"*/");
-  await writeFile(path.join(resources, "web-tests.js"), typographyOnly ? (await readFile("build/runtime/tests/webkit-typography.js", "utf8")) + "\nreturn runWebKitTypographyTests();\n" : aiOnly ? (await readFile("build/runtime/tests/webkit-ai.js", "utf8")) + "\nreturn runWebKitAITests(uploaderURL.replace(\"/upload\",\"/owned/v1\"));\n" : clipboardOnly ? (await readFile("build/runtime/tests/webkit-clipboard.js", "utf8")) + "\nreturn runWebKitClipboardTests();\n" : (await readFile("build/runtime/tests/webkit.js", "utf8")) + "\nreturn runWebKitTests(uploaderURL);\n");
+  await writeFile(path.join(resources, "web-tests.js"), sharedViewsOnly ? (await readFile("build/runtime/tests/webkit-shared-views.js", "utf8")) + "\nreturn runWebKitSharedViewsTests();\n" : typographyOnly ? (await readFile("build/runtime/tests/webkit-typography.js", "utf8")) + "\nreturn runWebKitTypographyTests();\n" : aiOnly ? (await readFile("build/runtime/tests/webkit-ai.js", "utf8")) + "\nreturn runWebKitAITests(uploaderURL.replace(\"/upload\",\"/owned/v1\"));\n" : clipboardOnly ? (await readFile("build/runtime/tests/webkit-clipboard.js", "utf8")) + "\nreturn runWebKitClipboardTests();\n" : (await readFile("build/runtime/tests/webkit.js", "utf8")) + "\nreturn runWebKitTests(uploaderURL);\n");
   await writeFile(
     path.join(contents, "Info.plist"),
     '<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>org.opentypora.webkittests</string><key>CFBundleExecutable</key><string>WebKitTests</string></dict></plist>',
@@ -95,14 +96,22 @@ try {
       stdio: "inherit",
     });
     child.on("error", reject);
-    child.on("exit", (code) =>
-      code === 0 ? resolve() : reject(new Error(`WebKit tests exited ${code}`)),
-    );
+    child.on("exit", async code => {
+      if (code === 0) { resolve(); return; }
+      if (process.env.OPEN_MARKDOWN_LANE_QA_DIR) {
+        try {
+          const snapshot = JSON.parse(await readFile(path.join(directory, 'data/session.json'), 'utf8'));
+          await mkdir(process.env.OPEN_MARKDOWN_LANE_QA_DIR, {recursive:true});
+          await writeFile(path.join(process.env.OPEN_MARKDOWN_LANE_QA_DIR, 'native-failure-recovery.json'), JSON.stringify({activeId:snapshot.activeId,workspace:snapshot.workspace,documents:snapshot.documents.map((record: {id:string;content:string;editorViews?:unknown})=>({id:record.id,length:record.content.length,head:record.content.slice(0,100),editorViews:record.editorViews}))},null,2));
+        } catch { /* Failure reporting must retain the original test error. */ }
+      }
+      reject(new Error(`WebKit tests exited ${code}`));
+    });
   });
   if (aiOnly) { assert.equal(aiRequests.length,6); assert.deepEqual(aiRequests.slice(0,4),["你好","普通","粗体","A"]); assert.equal(aiRequests[4],"What is the release budget?"); const aiFile=path.join(directory,"data/ai-settings.json"); assert.equal(JSON.parse(await readFile(aiFile,"utf8")).apiKey,"owned-fixture-only"); assert.equal((await stat(aiFile)).mode & 0o777,0o600); console.log("PASS: native AI UI reaches actual URLSession fixture, sends only selected text and persists the owner-only file credential without exposing it through the bridge"); }
-  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly) assert.equal(uploads.length, 1, "native PicGo request reaches the owned HTTP fixture once");
-  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly) console.log("PASS: native PicGo integration sends owned PNG bytes and accepts the returned URL");
-  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly && process.env.OPEN_MARKDOWN_LANE_QA_DIR) {
+  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly && !sharedViewsOnly) assert.equal(uploads.length, 1, "native PicGo request reaches the owned HTTP fixture once");
+  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly && !sharedViewsOnly) console.log("PASS: native PicGo integration sends owned PNG bytes and accepts the returned URL");
+  if (!clipboardOnly && !aiOnly && !localeOnly && !typographyOnly && !sharedViewsOnly && process.env.OPEN_MARKDOWN_LANE_QA_DIR) {
     await mkdir(process.env.OPEN_MARKDOWN_LANE_QA_DIR, { recursive: true });
     await cp(path.join(directory, "data/native-test-long.pdf"), path.join(process.env.OPEN_MARKDOWN_LANE_QA_DIR, "native-pagination.pdf"));
     for (const name of await readdir(path.join(directory, "data"))) if ((name.startsWith("native-converted.") || ["native-complex.pdf", "native-controlled.pdf", "native-tableheaders.pdf"].includes(name))) await cp(path.join(directory, "data", name), path.join(process.env.OPEN_MARKDOWN_LANE_QA_DIR, name), { recursive: true });

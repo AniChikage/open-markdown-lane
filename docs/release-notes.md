@@ -1,13 +1,15 @@
-Open Markdown Lane 0.24.6 adds easier font and content-width settings ([#18](https://github.com/AniChikage/open-markdown-lane/issues/18)).
+Open Markdown Lane 0.25.0 adds shared document views and bounded background editors.
 
 This is an independent, unofficial project, unaffiliated with Typora. If you can afford it, please [buy Typora](https://store.typora.io/) and support its official developers.
 
 ## Changes
 
-- **Preferences → Fonts & Layout** exposes separate body and code font fields without expanding advanced CSS. Choose a suggestion or enter a locally installed font family/fallback list; empty fields use the theme default. Suggestions do not install or download fonts.
-- Maximum content width supports **px or %**. Percentage widths follow each editor pane in live/source mode and split view. Both values are remembered, and existing pixel settings retain their meaning.
-- Font and layout choices remain separate for each theme, persist across restarts and are included in CSS export. Reset restores the current theme defaults.
-- Existing editing, undo/redo, document recovery, language preferences and AppImage update support remain available.
+- **View → Split this document** opens the same Markdown in live/source or two rendered views. Both panes share edits, save state and undo/redo; carets, modes and scroll positions remain independent. Existing two-document splits are still available.
+- Restore both views, their modes/positions, active pane and geometry with unsaved text after a normal restart. Close either pane without closing the document. Scrolling is independent, not synchronized.
+- Release background editor DOM using a bounded warm cache and idle expiry. Keep text and session undo/redo, and protect pending image imports and batch operations from eviction. Memory use still depends on document text, history and resources.
+- Mirror source updates as changed spans instead of replacing the entire CodeMirror document for each edit. Guard pane switches, layout changes and commands during composition.
+- Fixed a macOS recovery race: an earlier session snapshot could retire a newly registered document before the editor adopted it. Recovery now distinguishes acknowledged tabs from newly opened files, with explicit close hints for tabs closed before their first snapshot.
+- Existing documents, model configuration, themes and preferences remain in their current storage locations. Step-by-step undo survives view eviction, not application restart; use version history across sessions.
 
 ## Downloads
 
@@ -19,4 +21,4 @@ The six installers and the control file are covered by `SHA256SUMS.txt`. macOS i
 
 ## Validation
 
-Release gates exercise actual font styles for body/inline/fenced/large-code editing, percentage geometry in live/source/split/narrow layouts, legacy settings, restart, theme switching/reset, CSS export and exact save/undo/redo. macOS native WebKit has its own focused acceptance. Existing installed-editor, issue regressions and Ubuntu 22.04/24.04 real FUSE checks also run. The post-publication AppImageUpdate job uses the previous public image's embedded channel when available.
+New installed-editor and native WebKit acceptance covers shared views, Chinese composition guards, opposite-pane undo/redo, background eviction and recovery. Existing issue regressions, large code/table editing, AI review, clipboard, plugins and Ubuntu 22.04/24.04 real FUSE gates remain required. See [versioned verification](verification.md) for actual results and remaining manual checks.

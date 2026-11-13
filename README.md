@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/2cf16cf0-3c6b-4e5d-9c50-d8e9c6100338
 
 Open Markdown Lane is an open-source Markdown editor inspired by Typora's inline editing experience. Write directly in the rendered document, switch to source when you need it, and save ordinary `.md` files in your own folders.
 
-**Status:** early development, version **0.24.6**. Release builds support **macOS 14+ on Apple Silicon**, **Windows 10/11 x64**, and **Linux x64**. On first launch, the interface and sample notes follow the system language: Chinese locales use Simplified Chinese, and other locales use English. New profiles stay in Follow system language mode until you choose a language in Preferences → Language. A manual choice always takes precedence; existing notes and saved settings are preserved. On Linux, `LC_ALL`, `LC_MESSAGES`, then `LANG` determine the initial language. This is an independent project, unaffiliated with Typora; full feature and behavior parity is still in progress.
+**Status:** early development, version **0.25.0**. Release builds support **macOS 14+ on Apple Silicon**, **Windows 10/11 x64**, and **Linux x64**. On first launch, the interface and sample notes follow the system language: Chinese locales use Simplified Chinese, and other locales use English. New profiles stay in Follow system language mode until you choose a language in Preferences → Language. A manual choice always takes precedence; existing notes and saved settings are preserved. On Linux, `LC_ALL`, `LC_MESSAGES`, then `LANG` determine the initial language. This is an independent project, unaffiliated with Typora; full feature and behavior parity is still in progress.
 
 ## Features
 
@@ -33,6 +33,8 @@ Open Markdown Lane is an open-source Markdown editor inspired by Typora's inline
 - **Version history** — browse local snapshots across restarts, capture a version before experimenting, and restore earlier text while retaining the current content and undo.
 - **Live Markdown editing** — headings, inline formatting, lists, tasks, tables, links, footnotes, and YAML front matter. Edit code and formulas in place, or switch to the full source view.
 - **Spreadsheet paste** — copy an Excel/WPS range into an editable Markdown table in live or source mode; keep blank cells, quoted line breaks and one-step undo. [Clipboard behavior](docs/clipboard.md).
+- **One document, two views** — use **View → Split this document** to edit the same Markdown in live/source or two live views, with independent carets and scroll positions and shared undo. Restore modes, layout and unsaved text on restart.
+- **Bounded background views** — unload inactive editor DOM while keeping text and session undo/redo. Retain at most two small warm tabs; visible panes, batch edits and pending image imports stay resident.
 - **Tabs and split editing** — reorder and navigate document tabs, compare two documents side by side or stacked, and use independent source/live modes. Restore the pane layout on restart. Right-click tabs for grouped closing, path copying, rename and split actions; use text/table context menus for editing.
 - **Responsive editing** — initialize documents on first use, reuse unchanged blocks, and edit large files directly in a virtualized rendered document, with incremental block parsing, inner code/table viewports, delta undo history and background outline analysis; [benchmarks and limits](docs/performance.md).
 - **A focused writing space** — outline navigation, focus and typewriter modes, word counts, find and replace, six built-in themes, and local CSS themes.
@@ -65,20 +67,20 @@ The demo keeps documents in the current tab's memory; it does not upload or pers
 
 | Platform | Installer | Alternative |
 | --- | --- | --- |
-| Windows 10/11 · x64 | **[Download Setup.exe](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-windows-x64-Setup.exe)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-windows-x64.zip) |
-| macOS 14+ · Apple Silicon | **[Download DMG](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-arm64.dmg)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-arm64.zip) |
-| Linux · x64 | **[Download DEB](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-linux-x64.deb)** | [AppImage](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-x86_64.AppImage) |
+| Windows 10/11 · x64 | **[Download Setup.exe](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-windows-x64-Setup.exe)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-windows-x64.zip) |
+| macOS 14+ · Apple Silicon | **[Download DMG](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-arm64.dmg)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-arm64.zip) |
+| Linux · x64 | **[Download DEB](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-linux-x64.deb)** | [AppImage](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-x86_64.AppImage) |
 
-[SHA-256 checksums](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/SHA256SUMS.txt) · [All releases](https://github.com/AniChikage/open-markdown-lane/releases)
+[SHA-256 checksums](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/SHA256SUMS.txt) · [All releases](https://github.com/AniChikage/open-markdown-lane/releases)
 
-AppImage downloads use the `Open-Markdown-Lane-VERSION-x86_64.AppImage` naming convention. From 0.24.5, they include standard stable-channel update information and a [`.zsync` control file](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-x86_64.AppImage.zsync) for updates through AppImageUpdate. [Update instructions](docs/linux-appimage.md#updates-with-appimageupdate).
+AppImage downloads use the `Open-Markdown-Lane-VERSION-x86_64.AppImage` naming convention. From 0.24.5, they include standard stable-channel update information and a [`.zsync` control file](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-x86_64.AppImage.zsync) for updates through AppImageUpdate. [Update instructions](docs/linux-appimage.md#updates-with-appimageupdate).
 
 ### Install on Linux
 
 Ubuntu 22.04 or a compatible x64 distribution is the tested baseline. Download the DEB and install it with:
 
 ```sh
-sudo apt install ./Open-Markdown-Lane-0.24.6-linux-x64.deb
+sudo apt install ./Open-Markdown-Lane-0.25.0-linux-x64.deb
 ```
 
 The desktop launcher and Markdown file association are included. Uninstalling with `sudo apt remove open-markdown-lane` retains your documents and recovery data.
@@ -97,7 +99,7 @@ The Windows build is currently **not code-signed**. Windows may display an unkno
 
 ### Install on macOS
 
-1. Download **[Open-Markdown-Lane-0.24.6-arm64.dmg](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.24.6/Open-Markdown-Lane-0.24.6-arm64.dmg)** from [Releases](https://github.com/AniChikage/open-markdown-lane/releases/latest).
+1. Download **[Open-Markdown-Lane-0.25.0-arm64.dmg](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.25.0/Open-Markdown-Lane-0.25.0-arm64.dmg)** from [Releases](https://github.com/AniChikage/open-markdown-lane/releases/latest).
 2. Open the DMG and drag **Open Markdown Lane** into **Applications**.
 3. Launch Open Markdown Lane from Applications.
 
@@ -210,7 +212,7 @@ More editor and desktop suites, test isolation, and build details are in [CONTRI
 
 - Markdown open/save/recovery has no fixed 20 MiB cap. Large documents use viewport rendering, large code blocks use an inner CodeMirror viewport, and large tables mount visible rows. Available memory, initial parsing and runtime string limits still apply; [tested sizes and remaining limits](docs/performance.md). Converted imports and media keep separate resource budgets.
 - Legacy encodings without a BOM require an explicit encoding choice.
-- Rich editing and source editing have separate undo histories; changes made in source mode join the rich history as one transaction when returning.
+- Single-view rich editing and source editing have separate undo histories; changes made in source mode join the rich history as one transaction when returning. Once a document uses two views, those views share one history for that session. Step-by-step undo is retained through tab eviction, but does not survive an application restart; use version history for earlier sessions.
 - Format conversion can change layout or unsupported document structures. Some RTF image formats are rejected explicitly. Keep the original file when importing.
 - Windows/Linux DOC/RTF import requires both Pandoc and LibreOffice. Embedded WMF/EMF images need conversion to PNG/JPEG first.
 - Physical IME checks for 0.20.0 cover Sogou Pinyin on macOS, including AI instructions, rich-text locations and undo/redo. Other physical IMEs and Windows/Linux candidate windows still need manual acceptance; synthetic composition is separate. See the [versioned verification record](docs/verification.md).

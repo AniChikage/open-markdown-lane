@@ -341,6 +341,7 @@ export class DocumentStore {
       return {
         ...record,
         content: document.content,
+        editorViews: document.editorViews,
         savedContent: record.savedContent,
       };
     });

@@ -525,15 +525,16 @@ try {
   window.__openMarkdownLane.command({action:'outline'});await wait(()=>[...document.querySelectorAll<HTMLButtonElement>('.outline button')].some(button=>button.textContent==='Large native heading'));
   check(true,'large native outline analysis completes through the bundled worker');
   async function recoveredText(id: string, expected: string, previous: string, label: string) {
-    const started=Date.now(),deadline=started+12000;let pending=false;
+    const started=Date.now(),deadline=started+12000;let pending=false,lastLength:number | undefined;
     do {
       const state=await desktop.testRecovery();if(!state.ok)throw new Error(state.error);
       const actual=state.value!.documents.find(record=>record.id===id)?.content;
+      lastLength=actual?.length;
       if(actual===expected){if(pending)check(true,label+' recovery completed after '+(Date.now()-started)+' ms');return state;}
       if(actual!==undefined&&actual!==previous){let at=0;while(at<Math.min(actual.length,expected.length)&&actual[at]===expected[at])at++;throw new Error(label+' unexpected persisted content: lengths '+actual.length+'/'+expected.length+', first difference '+at+', actual '+JSON.stringify(actual.slice(Math.max(0,at-25),at+70))+', expected '+JSON.stringify(expected.slice(Math.max(0,at-25),at+70)));}
       pending=true;await new Promise(resolve=>setTimeout(resolve,250));
     }while(Date.now()<deadline);
-    throw new Error(label+' recovery did not finish within 12 seconds');
+    throw new Error(label+' recovery did not finish within 12 seconds; persisted length='+lastLength+'; expected length='+expected.length+'; focused='+document.hasFocus()+'; active='+document.activeElement?.className+'; code view='+root()?.querySelector('.fence-editing .cm-content')?.textContent?.slice(0,100));
   }
   const giantCodeSource = '# Native giant code\n\n```javascript\n'+('const value = "native"; // 0123456789abcdef\n').repeat(820000)+'NATIVE-CODE-END\n```\n';
   const giantCodeRecord={id:'native-giant-code-qa',name:'Native-Giant-Code.md',path:null,content:giantCodeSource,savedContent:'',diskHash:null,lineEnding:'\n',encoding:'utf-8',bom:false};

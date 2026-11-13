@@ -42,12 +42,30 @@ func runStoreTests() throws {
   _ = try store.draft(draft)
   var dirty = try store.require(record.id)
   dirty.content += "未保存"
+  dirty.editorViews = ["primary": EditorViewState(rendered: true, anchor: 1, head: 2, richScroll: 123, sourceScroll: 0), "secondary": EditorViewState(rendered: false, anchor: 3, head: 3, richScroll: 0, sourceScroll: 456)]
   try store.persist(SessionRecord(documents: [dirty, draft], activeId: draft.id, workspace: WorkspaceLayoutState(primaryId: dirty.id, secondaryId: draft.id, direction: "rows", ratio: 0.6)))
   let recovered = try DocumentStore(store.dataDirectory).restore()!
   try expect(
     recovered.documents.first?.conflict == true && recovered.documents.last?.content == "# 草稿",
     "recovery retains dirty file conflict and untitled draft")
   try expect(recovered.workspace?.primaryId == dirty.id && recovered.workspace?.secondaryId == draft.id && recovered.workspace?.ratio == 0.6, "native session restores split documents and pane dimensions")
+  try expect(recovered.documents.first?.editorViews?["primary"]?.richScroll == 123 && recovered.documents.first?.editorViews?["secondary"]?.rendered == false && recovered.documents.first?.editorViews?["secondary"]?.sourceScroll == 456, "native recovery preserves independent view presentation alongside dirty text")
+  let racingStore = DocumentStore(directory.appendingPathComponent("persist-race"))
+  let knownDraft = DocumentRecord(id: "known-draft", name: "Known.md", content: "known", savedContent: "", lineEnding: "\n")
+  let freshDraft = DocumentRecord(id: "fresh-draft", name: "Fresh.md", content: "新建未保存", savedContent: "", lineEnding: "\n")
+  _ = try racingStore.draft(knownDraft)
+  try racingStore.persist(SessionRecord(documents: [knownDraft], activeId: knownDraft.id))
+  _ = try racingStore.draft(freshDraft)
+  // An older renderer snapshot can arrive between draft registration and UI adoption.
+  try racingStore.persist(SessionRecord(documents: [knownDraft], activeId: knownDraft.id))
+  try expect(try racingStore.require(freshDraft.id).content == freshDraft.content, "an older recovery write cannot retire a newly registered document")
+  try racingStore.persist(SessionRecord(documents: [knownDraft, freshDraft], activeId: freshDraft.id))
+  try expect(try DocumentStore(racingStore.dataDirectory).restore()?.documents.last?.content == freshDraft.content, "new document remains persistable after the registration race")
+  let shortLived = DocumentRecord(id: "closed-before-first-persist", name: "Short.md", content: "", savedContent: "", lineEnding: "\n")
+  _ = try racingStore.draft(shortLived)
+  try racingStore.persist(SessionRecord(documents: [knownDraft, freshDraft], activeId: freshDraft.id, closedIds: [shortLived.id]))
+  try expect(racingStore.records[shortLived.id] == nil && racingStore.closedRecords[shortLived.id] != nil, "explicit tab close retires a new draft even before its first recovery snapshot")
+  try expect(try racingStore.reopen(shortLived.id).id == shortLived.id, "a tab closed before its first snapshot can be reopened")
   let change = try store.check(record.id)!
   _ = try store.accept(
     record.id, content: change["content"] as! String, digest: change["diskHash"] as! String)

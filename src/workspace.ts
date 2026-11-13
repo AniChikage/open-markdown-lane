@@ -1,9 +1,14 @@
 import type { WorkspaceLayout } from "../shared/contracts.js";
 export type { WorkspaceLayout } from "../shared/contracts.js";
 export function normalizeWorkspace(value: unknown, ids: string[], activeId: string): WorkspaceLayout | null {
-  if (!value || typeof value !== "object" || ids.length < 2) return null;
+  if (!value || typeof value !== "object" || !ids.length) return null;
   const layout = value as WorkspaceLayout;
   if (layout.direction !== "columns" && layout.direction !== "rows") return null;
+  if (layout.sameDocument && layout.primaryId === layout.secondaryId && ids.includes(layout.primaryId)) {
+    if (activeId !== layout.primaryId && ids.includes(activeId)) return { ...layout, primaryId: activeId, sameDocument: false, activePane: 'primary' };
+    return { ...layout, ratio: Number.isFinite(layout.ratio) ? Math.max(.2, Math.min(.8, layout.ratio)) : .5, activePane: layout.activePane === 'secondary' ? 'secondary' : 'primary' };
+  }
+  if (ids.length < 2) return null;
   let primaryId = ids.includes(layout.primaryId) ? layout.primaryId : ids.find(id => id !== layout.secondaryId)!;
   const secondaryId = ids.includes(layout.secondaryId) && layout.secondaryId !== primaryId ? layout.secondaryId : ids.find(id => id !== primaryId)!;
   if (ids.includes(activeId) && activeId !== primaryId && activeId !== secondaryId) primaryId = activeId;
@@ -12,6 +17,7 @@ export function normalizeWorkspace(value: unknown, ids: string[], activeId: stri
 }
 export function activateWorkspace(layout: WorkspaceLayout | null, currentId: string, nextId: string) {
   if (!layout || nextId === layout.primaryId || nextId === layout.secondaryId) return layout;
+  if (layout.sameDocument) return layout.activePane === 'secondary' ? { ...layout, secondaryId: nextId, sameDocument: false } : { ...layout, primaryId: nextId, sameDocument: false };
   return currentId === layout.secondaryId ? { ...layout, secondaryId: nextId } : { ...layout, primaryId: nextId };
 }
 export function reorderDocuments<T extends { id: string }>(documents: T[], sourceId: string, targetId: string) {

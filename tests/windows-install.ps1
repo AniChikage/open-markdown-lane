@@ -48,6 +48,8 @@ node tests/parity-desktop.mts
 $parityExit = $LASTEXITCODE
 node tests/indentation-desktop.mts
 $indentationExit = $LASTEXITCODE
+node tests/shared-views-desktop.mts
+if ($LASTEXITCODE -ne 0) { throw "Shared document view acceptance failed" }
 node tests/workspace-desktop.mts
 $workspaceExit = $LASTEXITCODE
 node tests/compatibility-desktop.mts

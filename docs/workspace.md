@@ -4,6 +4,16 @@ English · [简体中文](workspace.zh-CN.md)
 
 These desktop features use ordinary local Markdown files. AI remains optional: configure your own compatible API or local model in **Edit → Model settings…**. No model or cloud subscription is bundled. See the [AI guide](ai.md) for service and credential settings.
 
+## Two views of one document and background tabs
+
+Use **View → Split this document**, the tab context menu or the tab-bar button. The second view starts in source mode; each pane can switch modes independently. Both share one Markdown buffer, dirty state, saved file and undo history, with separate selections and scroll positions. F6 switches panes. Columns/rows, pane swapping and closing either pane are supported. Scrolling remains independent; there is no synchronized-scroll toggle.
+
+Input composition blocks pane/mode/layout changes until commit. Commands, AI review and plugins target the active view. Closing a pane retains the other view's presentation and the document. Selecting another tab can return to the existing two-document split workflow.
+
+Inactive editor DOM is bounded by a two-tab warm cache and a 2 MiB estimate based on UTF-16 text size. Background views over 1 MiB by that estimate unload immediately; other warm views expire after 30 seconds at the next periodic check. Visible panes, batch operations and pending image imports are exempt. This is a view policy, not a total-memory limit: text, bounded undo history, resources and runtime still use memory.
+
+Eviction preserves unsaved text, mode, selection, scroll and undo/redo for this session. Normal restart restores text, both pane modes/positions, active pane and split geometry. Existing sessions without presentation metadata keep their defaults. Step-by-step undo does not survive a process restart; version history provides recovery across sessions.
+
 ## Add reference files to a rewrite
 
 Select text and open **Rewrite selection with AI**. Type `@` and a filename in the instructions, or use **Add reference file**. Choose from open documents and the currently authorized folder. Selected files appear as removable chips.

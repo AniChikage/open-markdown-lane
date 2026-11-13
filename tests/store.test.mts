@@ -23,6 +23,14 @@ async function setup(text = "# 原文\n\n中文内容\n") {
   const store = new DocumentStore(path.join(directory, ".recovery"));
   return { store, directory, file, record: await store.open(file) };
 }
+test("one dirty document restores both view positions and active same-document pane", async () => {
+  const {store,directory,record}=await setup();
+  const editorViews={primary:{rendered:true,anchor:1,head:2,richScroll:123,sourceScroll:0},secondary:{rendered:false,anchor:3,head:3,richScroll:0,sourceScroll:456}};
+  const workspace:import('../shared/contracts.js').WorkspaceLayout={primaryId:record.id,secondaryId:record.id,direction:'rows',ratio:.65,sameDocument:true,activePane:'secondary',reversed:true};
+  await store.persist({documents:[{...record,content:record.content+'未保存',editorViews}],activeId:record.id,workspace});
+  const restored=await new DocumentStore(path.join(directory,'.recovery')).restore();
+  assert.equal(restored!.documents.length,1);assert.equal(restored!.documents[0].content,record.content+'未保存');assert.deepEqual(restored!.documents[0].editorViews,editorViews);assert.deepEqual(restored!.workspace,workspace);
+});
 test("atomic save preserves BOM, CRLF, original text and file permissions", async () => {
   const text =
     "\uFEFF---\r\ntitle: 测试\r\n---\r\n\r\n# 标题  \r\n\r\n<!-- 原始注释 -->\r\n";

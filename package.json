@@ -1,6 +1,6 @@
 {
   "name": "open-markdown-lane",
-  "version": "0.24.6",
+  "version": "0.25.0",
   "description": "A local Markdown writing space with live rendering and lossless source editing.",
   "private": true,
   "type": "module",
@@ -53,7 +53,8 @@
     "test:ai-webkit": "npm run build && node scripts/test-webkit.mts --ai",
     "test:batch": "node tests/batch-desktop.mts",
     "test:knowledge": "node tests/knowledge-desktop.mts",
-    "test:branding": "node tests/branding-desktop.mts"
+    "test:branding": "node tests/branding-desktop.mts",
+    "test:shared-views": "node tests/shared-views-desktop.mts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

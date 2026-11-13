@@ -235,6 +235,8 @@ jobs:
         run: npm run test:branding
       - name: Verify real native spreadsheet clipboard, source mode and undo
         run: node scripts/test-webkit.mts --clipboard
+      - name: Verify native shared views, eviction, composition and exact undo
+        run: node scripts/test-webkit.mts --shared-views
       - name: Verify native fonts, percentage widths and undo history
         run: node scripts/test-webkit.mts --typography
       - name: Verify native first-run locale, manual preferences and welcome documents

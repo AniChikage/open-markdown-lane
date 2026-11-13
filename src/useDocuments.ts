@@ -6,8 +6,13 @@ import { normalizeWorkspace, activateWorkspace, reorderDocuments } from "./works
 import type { WorkspaceLayout } from "./workspace";
 import { documentFileName, pathContains } from "./filePaths";
 import type { DocumentRecord, FileEntry, FolderResult, PathChange, RecentEntry, FileOperation } from "./types";
-export function useDocuments(canPrepare: () => boolean = () => true) {
+export function useDocuments(canPrepare: () => boolean = () => true, captureViews?: () => Map<string, DocumentRecord["editorViews"]>) {
   const prepareEditor = useRef(canPrepare); prepareEditor.current = canPrepare;
+  const snapshotViews = useRef(captureViews); snapshotViews.current = captureViews;
+  function persist(snapshot: import("./types").SessionSnapshot) {
+    const views = snapshotViews.current?.();
+    return host.persist({ ...snapshot, documents: snapshot.documents.map(record => views?.has(record.id) ? { ...record, editorViews: views.get(record.id) } : record) });
+  }
   const [documents, setDocuments] = useState<DocumentRecord[]>([]),
     [activeId, setActiveIdState] = useState("");
   const [workspace, setWorkspaceState] = useState<WorkspaceLayout | null>(null);
@@ -25,6 +30,15 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
   current.current = { documents, activeId, workspace };
   const inFlight = useRef(new Map<string, Promise<unknown>>());
   const closing = useRef(false);
+  const viewPersist = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function rememberViews() {
+    if (viewPersist.current !== null) clearTimeout(viewPersist.current);
+    viewPersist.current = setTimeout(() => {
+      viewPersist.current = null;
+      if (!closing.current && prepareEditor.current()) void persist(current.current).catch(notify);
+    }, 600);
+  }
+  useEffect(() => () => { if (viewPersist.current !== null) clearTimeout(viewPersist.current); }, []);
   const closed = useRef<{ id: string; name: string }[]>([]);
   const activated = useRef<string[]>([]);
   const update = (id: string, patch: Partial<DocumentRecord>) => {
@@ -90,7 +104,7 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
     if (!ready) return;
     const timer = setTimeout(() => {
       if (closing.current) return;
-      void host.persist({ documents, activeId, workspace }).catch(notify);
+      void persist({ documents, activeId, workspace }).catch(notify);
     }, documents.some(record => record.content.length > 300_000) ? 1200 : 500);
     void host.setDirty(
       documents.some((record) => record.content !== record.savedContent),
@@ -234,6 +248,16 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
     const value = normalizeWorkspace(layout, current.current.documents.map(record => record.id), current.current.activeId);
     current.current = { ...current.current, workspace: value }; setWorkspaceState(value);
   }
+  function selectPane(id: string, secondary = false) {
+    if (!canSwitch() || !setActiveId(id)) return false;
+    if (current.current.workspace?.sameDocument) setWorkspace({ ...current.current.workspace, activePane: secondary ? 'secondary' : 'primary' });
+    return true;
+  }
+  function splitSameDocument() {
+    if (!canSwitch() || !current.current.activeId) return;
+    const id = current.current.activeId;
+    setWorkspace({ primaryId: id, secondaryId: id, direction: current.current.workspace?.direction || 'columns', ratio: .5, sameDocument: true, activePane: 'primary' });
+  }
   async function split(direction: "columns" | "rows") {
     if (!canSwitch() || !current.current.activeId) return;
     if (current.current.workspace) { setWorkspace({ ...current.current.workspace, direction }); return; }
@@ -249,11 +273,13 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
     setWorkspace(null);
   }
   function resizeWorkspace(ratio: number) {
+    if (!canSwitch()) return;
     if (current.current.workspace && Number.isFinite(ratio)) setWorkspace({ ...current.current.workspace, ratio });
   }
   function swapPanes() {
     if (!canSwitch() || !current.current.workspace) return;
     const layout = current.current.workspace;
+    if (layout.sameDocument) { setWorkspace({ ...layout, reversed: !layout.reversed, ratio: 1-layout.ratio }); return; }
     setWorkspace({ ...layout, primaryId: layout.secondaryId, secondaryId: layout.primaryId, ratio: 1-layout.ratio });
   }
   function nextTab(back = false) {
@@ -262,7 +288,8 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
   }
   function otherPane() {
     const layout = current.current.workspace;
-    if (layout) setActiveId(current.current.activeId === layout.primaryId ? layout.secondaryId : layout.primaryId);
+    if (layout?.sameDocument) selectPane(current.current.activeId, layout.activePane !== 'secondary');
+    else if (layout) setActiveId(current.current.activeId === layout.primaryId ? layout.secondaryId : layout.primaryId);
   }
   function reorder(source: string, target: string) {
     if (!canSwitch()) return;
@@ -363,7 +390,7 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
           setDocuments(current.current.documents);
         }
       }
-      await host.persist(current.current); return true;
+      await persist(current.current); return true;
     }
     if (phase === "commit") {
       const records = current.current.documents.filter(record => !change.removedPath || !record.path || !pathContains(record.path, change.removedPath)).map(record => {
@@ -375,7 +402,7 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
       const id = records.some(record => record.id === current.current.activeId) ? current.current.activeId : records[0]?.id || "";
       const layout = normalizeWorkspace(current.current.workspace, records.map(record => record.id), id);
       current.current = { documents: records, activeId: id, workspace: layout }; setDocuments(records); setActiveIdState(id); setWorkspaceState(layout);
-      await host.persist(current.current); await refresh(); setRecent(await host.recent()); return true;
+      await persist(current.current); await refresh(); setRecent(await host.recent()); return true;
     }
     return false;
   };
@@ -430,7 +457,7 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
       const at = current.current.documents.findIndex(record => record.id === current.current.activeId);
       const nextId = targets.has(current.current.activeId) ? recent || remaining[Math.min(at, remaining.length - 1)]?.id || "" : current.current.activeId;
       const layout = normalizeWorkspace(current.current.workspace, remaining.map(record => record.id), nextId);
-      await host.persist({ documents: remaining, activeId: nextId, workspace: layout });
+      await persist({ documents: remaining, activeId: nextId, workspace: layout, closedIds: records.map(record => record.id) });
       activated.current = [...activated.current.filter(id => !targets.has(id) && id !== nextId), ...(nextId ? [nextId] : [])];
       current.current = { documents: remaining, activeId: nextId, workspace: layout };
       setDocuments(remaining); setActiveIdState(nextId); setWorkspaceState(layout);
@@ -480,7 +507,7 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
       const result = mode === "reopen" ? await host.reload(id, encoding) : await host.save(id, record.content, false, false, { encoding, bom });
       if (!result) return false;
       update(id, result);
-      await host.persist(current.current);
+      await persist(current.current);
       return true;
     } finally { closing.current = false; }
   }
@@ -488,7 +515,7 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
     if (!prepareEditor.current()) { setMessage("请先完成当前输入法组合输入，再退出。"); await host.cancelClose(); return; }
     try {
       await Promise.allSettled([...inFlight.current.values()]);
-      await host.persist(current.current);
+      await persist(current.current);
       await host.setDirty(false);
       await host.closeWindow();
     } catch (error) {
@@ -530,8 +557,9 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
             1,
           );
       }
-      await host.persist({
+      await persist({
         documents: remaining,
+        closedIds: current.current.documents.filter(record => !remaining.some(item => item.id === record.id)).map(record => record.id),
         activeId: remaining.some((item) => item.id === current.current.activeId)
           ? current.current.activeId
           : remaining[0]?.id || "",
@@ -551,7 +579,7 @@ export function useDocuments(canPrepare: () => boolean = () => true) {
     canReopen: closed.current.length > 0,
     canMutate: () => !closing.current && !fileOperationBusy,
     fileOperationBusy, fileOperation, recent, recentAction,
-    setActiveId,
+    setActiveId, selectPane, splitSameDocument, rememberViews,
     active: documents.find((record) => record.id === activeId),
     files,
     folder,

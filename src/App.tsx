@@ -57,11 +57,16 @@ import { PluginsDialog } from "./components/PluginsDialog";
 import { backgroundRevisionKey, backgroundStyle } from "./background";
 import { imeKey } from "./editor/composition";
 import type { BackgroundAsset } from "./background";
+import { mirrorKey, EditorBuffer } from "./editor/EditorBuffer";
 export default function App() {
   useLanguage();
   const editors = useRef(new Map<string, EditorHandle>());
   const composing = useCallback(() => [...editors.current.values()].some(editor => editor.composing()), []);
-  const session = useDocuments(() => !composing());
+  const buffers = useRef(new Map<string, EditorBuffer>());
+  const session = useDocuments(() => !composing(), () => {
+    for (const handle of editors.current.values()) handle.snapshotView();
+    return new Map([...buffers.current].map(([id, buffer]) => [id, { ...buffer.views }]));
+  });
   const [preferences, setPreferences] = useState(() => { const initial = loadPreferences(); setMarkdownOptions(initial); return initial; });
   const [themes, setThemes] = useState<{ id: string; name: string; css: string }[]>([]);
   const [background,setBackground] = useState<BackgroundAsset | null>(null);
@@ -84,6 +89,7 @@ export default function App() {
   }
   const mutationState = useRef({ readOnly, dialog, aiId: aiSelection?.id }); mutationState.current = { readOnly, dialog, aiId: aiSelection?.id };
   const [batchEditors, setBatchEditors] = useState<string[]>([]);
+  useEffect(() => { if (dialog !== 'batch-edit') setBatchEditors(previous => previous.length ? [] : previous); }, [dialog]);
   const [aiSettingsRevision, setAISettingsRevision] = useState(0);
   function startRewrite() {
     if (!host.native) { session.setMessage(t("AI 改写请使用桌面应用。")); return; }
@@ -97,8 +103,9 @@ export default function App() {
   const [exporting, setExporting] = useState(false);
   const exportingRef = useRef(false);
   const [modes, setModes] = useState<Record<string,boolean>>({});
-  const rendered = modes[session.activeId] !== false;
-  function setRendered(value: boolean | ((previous: boolean) => boolean)) { setModes(previous => ({...previous,[session.activeId]: typeof value === "function" ? value(previous[session.activeId] !== false) : value})); }
+  const activeViewId = session.workspace?.sameDocument && session.workspace.activePane === "secondary" ? mirrorKey(session.activeId) : session.activeId;
+  const rendered = modes[activeViewId] ?? session.active?.editorViews?.[activeViewId === session.activeId ? "primary" : "secondary"]?.rendered ?? (activeViewId === session.activeId);
+  function setRendered(value: boolean | ((previous: boolean) => boolean)) { setModes(previous => ({...previous,[activeViewId]: typeof value === "function" ? value(previous[activeViewId] ?? rendered) : value})); }
   const [sidebar, setSidebar] = useState(() => window.innerWidth > 760),
     [focus, setFocus] = useState(false);
   const [tab, setTab] = useState<"files" | "outline" | "tree">("files"),
@@ -107,15 +114,17 @@ export default function App() {
     );
   const [cursor, setCursor] = useState({ line: 1, column: 1 }),
     [about, setAbout] = useState(false);
-  const editor = () => editors.current.get(session.activeId);
+  function splitSameDocument() { const current = sessionRef.current; if (composing()) { current.setMessage(t("请先完成当前输入法组合输入。")); return; } buffers.current.get(current.activeId)?.share(); current.splitSameDocument(); }
+  function editorFor(id: string) { const state = sessionRef.current; return editors.current.get(state.workspace?.sameDocument && state.workspace.activePane === "secondary" && id === state.activeId ? mirrorKey(id) : id); }
+  const editor = () => editorFor(session.activeId);
   const printDocument = useRef<HTMLElement>(null);
   const commands = useRef<(command: Command) => void>(() => {});
   const active = session.active;
   const references = useMemo(() => referenceFiles(session.documents, session.files), [session.documents, session.files]);
   const sessionRef = useRef(session); sessionRef.current = session;
   async function historyMutation(id: string, reason: "ai" | "restore", valid: () => boolean, change: (target: EditorHandle) => boolean | void) {
-    const target = editors.current.get(id), before = target?.markdown();
-    const permitted = () => !!target && sessionRef.current.activeId === id && editors.current.get(id) === target && !composing() && !mutationState.current.readOnly && target.markdown() === before && valid();
+    const target = editorFor(id), before = target?.markdown();
+    const permitted = () => !!target && sessionRef.current.activeId === id && editorFor(id) === target && !composing() && !mutationState.current.readOnly && target.markdown() === before && valid();
     if (!permitted() || before === undefined) return false;
     const result = await host.captureVersion(id, before, reason === "ai" ? "before-ai" : "before-restore");
     if (!permitted()) { sessionRef.current.setMessage(t("文档或输入状态已变化，未应用修改。请重新操作。")); return false; }
@@ -147,7 +156,7 @@ export default function App() {
   async function applyBatch(targets: BatchTarget[], instruction: string): Promise<string | null> {
     const permitted = () => mutationState.current.dialog === 'batch-edit' && !mutationState.current.readOnly && !composing() && sessionRef.current.canMutate() && targets.length > 0 && targets.length <= 4 && new Set(targets.map(target => target.documentId)).size === targets.length && targets.every(target => {
       const record = sessionRef.current.documents.find(record => record.id === target.documentId);
-      return record && record.path === target.path && record.content === target.before && !record.conflict && (!editors.current.has(record.id) || editors.current.get(record.id)!.markdown() === target.before);
+      return record && record.path === target.path && record.content === target.before && !record.conflict && (!editors.current.has(record.id) || editorFor(record.id)!.markdown() === target.before);
     });
     if (!permitted()) throw new Error(t('文档或输入状态已变化，未应用修改。请重新操作。'));
     await sessionRef.current.waitForSaves(targets.map(target => target.documentId));
@@ -168,14 +177,14 @@ export default function App() {
       if (!permitted() || targets.some(target => !editors.current.has(target.documentId))) throw new Error(t('文档或输入状态已变化，未应用修改。请重新操作。'));
       flushSync(() => {
         for (const target of targets) {
-          const editor = editors.current.get(target.documentId)!;
+          const editor = editorFor(target.documentId)!;
           try { editor.transform(() => target.after.replace(/\r\n/g, '\n')); }
           finally { if (editor.markdown() !== target.before) changed.push(target); }
           if (editor.markdown() !== target.after) throw new Error(t('无法应用整批修改，已恢复原文。'));
         }
       });
     } catch (error) {
-      flushSync(() => { for (const target of changed.reverse()) editors.current.get(target.documentId)?.undo(); });
+      flushSync(() => { for (const target of changed.reverse()) editorFor(target.documentId)?.undo(); });
       await host.finishEditBatch(batch.id, false); throw error;
     } finally { if (focused?.isConnected) focused.focus({ preventScroll: true }); }
     try {
@@ -203,7 +212,7 @@ export default function App() {
     if (!record || !sessionRef.current.setActiveId(record.id)) return;
     const fresh = await readReference({ token: "document:" + record.id, name: source.name, path: record.path }, [record]);
     if (fresh.hash !== source.hash) sessionRef.current.setMessage(t("原文已变化，引用保留的是生成时的片段；行号可能已移动。"));
-    const id = record.id; requestAnimationFrame(() => editors.current.get(id)?.jump(source.fromLine));
+    const id = record.id; requestAnimationFrame(() => editorFor(id)?.jump(source.fromLine));
   }
   async function insertAnswer(text: string, draft: boolean) {
     if (composing() || mutationState.current.readOnly) { sessionRef.current.setMessage(t("请先完成输入法组合输入并关闭只读模式。")); return false; }
@@ -215,13 +224,26 @@ export default function App() {
     return historyMutation(id, "ai", () => mutationState.current.dialog === "knowledge", target => target.insert("\n\n" + text + "\n"));
   }
   const registerEditor = useCallback((id: string, handle: EditorHandle | null) => { if (handle) editors.current.set(id,handle); else editors.current.delete(id); }, []);
-  const selectDocument = useCallback((id: string) => sessionRef.current.setActiveId(id), []);
+  const selectDocument = useCallback((id: string, mirror = false) => sessionRef.current.selectPane(id, mirror), []);
+  const viewStateDocument = useCallback(() => sessionRef.current.rememberViews(), []);
   const changeDocument = useCallback((id: string, content: string) => sessionRef.current.update(id,{content}), []);
   const cursorDocument = useCallback((id: string, line: number, column: number) => { if (id === sessionRef.current.activeId) setCursor(previous => previous.line === line && previous.column === column ? previous : {line,column}); }, []);
   const selectionDocument = useCallback((id: string, text: string) => { if (id === sessionRef.current.activeId) setSelection(text); }, []);
   const compositionDocument = useCallback((id: string) => { if (id === sessionRef.current.activeId) pluginRuntime.current?.documentChanged(); }, []);
   const modeDocument = useCallback((id: string, value: boolean) => { setModes(previous => ({...previous,[id]:value})); }, []);
-  const closePane = useCallback((id: string) => sessionRef.current.closePane(id), []);
+  const closePane = useCallback((key: string) => {
+    const current = sessionRef.current, layout = current.workspace;
+    if (composing()) { current.setMessage(t("请先完成当前输入法组合输入。")); return; }
+    if (layout?.sameDocument && key === layout.primaryId) {
+      const buffer = buffers.current.get(key), surviving = buffer?.views.secondary;
+      if (buffer && surviving) {
+        buffer.views.primary = { ...surviving };
+        buffer.generation++;
+        setModes(previous => ({ ...previous, [key]: surviving.rendered }));
+      }
+    }
+    current.closePane(layout?.sameDocument ? layout.primaryId : key);
+  }, [composing]);
   const commandDocument = useCallback((id: string, action: string) => {
     if (sessionRef.current.activeId === id) commands.current({ action });
   }, []);
@@ -229,7 +251,7 @@ export default function App() {
   useLayoutEffect(() => {
     // Restore after React removes a closed tab; a frame can run before that commit.
     if (tabFocusRequest && document.activeElement === document.body)
-      editors.current.get(sessionRef.current.activeId)?.focus();
+      editorFor(sessionRef.current.activeId)?.focus();
   }, [tabFocusRequest]);
   const tabAction = useCallback((id: string, action: string) => {
     void (async () => {
@@ -243,6 +265,7 @@ export default function App() {
       else if (action.startsWith("copy-")) { const text = tabCopyText(record, action.slice(5) as TabCopyKind); if (text !== null) await host.writeClipboard(text); }
       else if ((action === "reveal" || action === "open-directory") && record.path) await host.reveal(record.path, action === "open-directory");
       else if (action === "rename" && record.path) setFileOperation({ action: "rename", path: record.path, name: record.name });
+      else if (action === "split-same") { if (current.setActiveId(id)) splitSameDocument(); }
       else if (action === "split-right" || action === "split-down") { if (current.setActiveId(id)) await current.split(action === "split-right" ? "columns" : "rows"); }
       else if (action === "close-pane") current.closePane(id);
       else if (action === "autosave") current.setAutosave(value => !value);
@@ -277,7 +300,7 @@ export default function App() {
     if (!session.ready || !active) return;
     for (const definition of pluginDefinitions) void pluginRuntime.current?.setEnabled(definition, !!pluginPreferences[definition.id]?.enabled);
   }, [pluginDefinitions, pluginPreferences, session.ready, !!active]);
-  useEffect(() => { pluginRuntime.current?.documentChanged(); }, [active?.id, active?.path, active?.content]);
+  useEffect(() => { pluginRuntime.current?.documentChanged(); }, [active?.id, activeViewId, active?.path, active?.content]);
   useEffect(() => { pluginRuntime.current?.event("beforeToggleSourceMode", !rendered); }, [rendered]);
   useEffect(() => { pluginRuntime.current?.event("afterToggleSidebar", sidebar); }, [sidebar]);
   async function installPlugin(folder = false) { const installed = await host.installPlugin(folder); if (installed) setInstalledPlugins(previous => [...previous.filter(item => item.id !== installed.id), { ...installed, description: t("本地插件，通过兼容接口运行。"), config: {} }]); }
@@ -378,7 +401,7 @@ export default function App() {
     if (["rich", "table"].includes(context || "") && !editor()?.richMode()) return;
     if (action === "notice") { if (message) session.setMessage(message); }
     else if (action === "opened") {
-      if (opened) void session.add(opened).then(record => { if (record && (anchor || line)) requestAnimationFrame(() => { const heading = anchor ? extractHeadings(record.content).find(heading => heading.id === anchor || heading.text === anchor) : undefined; editors.current.get(record.id)?.jump(line || heading?.line || 1); }); });
+      if (opened) void session.add(opened).then(record => { if (record && (anchor || line)) requestAnimationFrame(() => { const heading = anchor ? extractHeadings(record.content).find(heading => heading.id === anchor || heading.text === anchor) : undefined; editorFor(record.id)?.jump(line || heading?.line || 1); }); });
     } else if (["new", "newWindow", "newTab"].includes(action)) void session.create();
     else if (action === "open") void session.open();
     else if (action === "folder") void session.openFolder();
@@ -404,10 +427,11 @@ export default function App() {
       flushSync(() => setRendered((value) => !value));
     }
     else if (action === "next-tab" || action === "previous-tab") session.nextTab(action === "previous-tab");
+    else if (action === "split-same") splitSameDocument();
     else if (action === "split-right" || action === "split-down") void session.split(action === "split-right" ? "columns" : "rows");
     else if (action === "other-pane") session.otherPane();
     else if (action === "swap-panes") session.swapPanes();
-    else if (action === "close-pane") session.closePane(session.activeId);
+    else if (action === "close-pane") closePane(activeViewId);
     else if (action === "sidebar") setSidebar((value) => !value);
     else if (action === "outline" || action === "files" || action === "file-tree") {
       setTab(action === "file-tree" ? "tree" : action);
@@ -444,7 +468,7 @@ export default function App() {
     else if (["copy-all-images", "move-all-images", "upload-all-images"].includes(action) && active) {
       const source = active.content, sources = [...new Set(imageReferences(source).map(image => image.url))];
       if (!sources.length) { session.setMessage(t("当前文档没有图片。")); return; }
-      void host.persist({ documents: session.documents, activeId: session.activeId, workspace: session.workspace }).then(() => host.imageAction(active.id, sources, action.split("-")[0], { ...preferences })).then(mapping => { if (mapping) editors.current.get(active.id)?.transform(text => updateImageReferences(text, mapping)); }).catch(e => session.setMessage(e.message));
+      void host.persist({ documents: session.documents, activeId: session.activeId, workspace: session.workspace }).then(() => host.imageAction(active.id, sources, action.split("-")[0], { ...preferences })).then(mapping => { if (mapping) editorFor(active.id)?.transform(text => updateImageReferences(text, mapping)); }).catch(e => session.setMessage(e.message));
     }
     else if (action === "copy-markdown") void host.writeClipboard(editor()?.selectionText(true) || "").catch(error => session.setMessage(error.message));
     else if (action === "paste-plain") void host.readClipboard().then(text => editor()?.insert(text)).catch(error => session.setMessage(error.message));
@@ -452,7 +476,7 @@ export default function App() {
       await host.persist({ documents: session.documents, activeId: session.activeId, workspace: session.workspace });
       const image = await host.chooseImage(active.id, { ...preferences, source: active.content }); if (!image) return;
       if (preferences.imageAutoUpload) { try { const mapping = await host.imageAction(active.id, [image.path], "upload", { ...preferences }); if (mapping?.[image.path]) image.path = mapping[image.path]; } catch (e) { session.setMessage(t("上传失败，已保留本地图片：{0}", (e as Error).message)); } }
-      editors.current.get(active.id)?.insert(`![${image.alt.replace(/[\[\]]/g, "")}](${image.path})`);
+      editorFor(active.id)?.insert(`![${image.alt.replace(/[\[\]]/g, "")}](${image.path})`);
     })().catch(error => session.setMessage(error.message));
     else editor()?.command(action);
   };
@@ -558,7 +582,7 @@ export default function App() {
         ) : (
           <>
             <div className={"writing-content" + (rightPanel ? " with-tools" : "")}>
-            <EditorWorkspace retainedIds={batchEditors} documents={session.documents} activeId={session.activeId} layout={session.workspace} modes={modes}
+            <EditorWorkspace buffers={buffers.current} viewState={viewStateDocument} sameDocument={splitSameDocument} retainedIds={batchEditors} documents={session.documents} activeId={session.activeId} layout={session.workspace} modes={modes}
               preferences={preferences} readOnly={readOnly} typewriter={typewriter} select={selectDocument} register={registerEditor} change={changeDocument} error={session.setMessage} cursor={cursorDocument} selection={selectionDocument} compositionEnd={compositionDocument} mode={modeDocument} closePane={closePane} command={commandDocument} tabAction={tabAction} autosave={session.autosave} composing={composing}
               create={() => void session.create()} close={id => void session.close(id)} reorder={session.reorder} split={direction => void session.split(direction)} swap={session.swapPanes} resize={session.resizeWorkspace} />
             <aside className="right-tools" aria-label={t("文档工具")} hidden={!rightPanel} onCompositionStartCapture={() => { toolComposing.current = true; }} onCompositionEndCapture={() => { toolComposing.current = false; }}>
@@ -582,7 +606,7 @@ export default function App() {
               settings={() => setDialog("ai-settings")} recapture={startRewrite} close={() => { setAISelection(null); setRightPanel(null); }} notify={session.setMessage}
               apply={async text => {
                 const id = aiSelection.selection.documentId;
-                return historyMutation(id, "ai", () => mutationState.current.aiId === aiSelection.id && !!editors.current.get(id)?.rewriteCurrent(aiSelection.selection), target => {
+                return historyMutation(id, "ai", () => mutationState.current.aiId === aiSelection.id && !!editorFor(id)?.rewriteCurrent(aiSelection.selection), target => {
                   if (!target.applyRewrite(aiSelection.selection, text)) return false;
                   const selection = { ...aiSelection.selection, source: target.markdown().replace(/\r\n/g, "\n"), to: aiSelection.selection.from + text.length, text };
                   setAISelection(previous => previous?.id === aiSelection.id ? { ...previous, selection } : previous);
@@ -631,7 +655,7 @@ export default function App() {
       {dialog === "ai-settings" && <AISettingsDialog saved={() => setAISettingsRevision(value => value + 1)} close={closeDialog} />}
       {dialog === "encoding" && active && <EncodingDialog key={active.id} record={active} change={session.changeEncoding} close={closeDialog} />}
       {dialog === "recent" && <RecentDialog entries={session.recent} action={session.recentAction} close={closeDialog} />}
-      {dialog === "global-search" && <GlobalSearch folder={session.folder} close={closeDialog} open={async match => { const record = await session.openToken(match.token); if (record) requestAnimationFrame(() => editors.current.get(record.id)?.jump(match.line)); }} />}
+      {dialog === "global-search" && <GlobalSearch folder={session.folder} close={closeDialog} open={async match => { const record = await session.openToken(match.token); if (record) requestAnimationFrame(() => editorFor(record.id)?.jump(match.line)); }} />}
       {dialog === "preferences" && <PreferencesDialog value={preferences} change={changePreferences} theme={theme} changeTheme={setTheme} themes={themes} installTheme={installTheme} customization={themeCustomization} customize={customizeTheme} resetTheme={resetTheme} saveTheme={saveTheme} background={background} chooseBackground={chooseBackground} clearBackground={clearBackground} plugins={() => setDialog("plugins")} models={() => setDialog("ai-settings")} close={closeDialog} />}
       {dialog === "plugins" && <PluginsDialog definitions={pluginDefinitions} preferences={pluginPreferences} states={pluginStates} toggle={(id, enabled) => setPluginPreferences(previous => ({ ...previous, [id]: { ...previous[id], enabled } }))} configure={(id, config) => setPluginPreferences(previous => ({ ...previous, [id]: { ...previous[id], config } }))} invoke={async (id,action) => { await pluginRuntime.current?.invoke(id,action); }} actions={id => pluginRuntime.current?.actions(id) || []} install={installPlugin} remove={removePlugin} close={closeDialog} />}
       {dialog === "quick-open" && <QuickOpen documents={session.documents} files={session.files} recent={session.recent} openRecent={path => session.recentAction("open", path)} select={session.setActiveId} open={session.openToken} close={closeDialog} />}

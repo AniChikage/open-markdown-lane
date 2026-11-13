@@ -28,6 +28,7 @@
     "shared/contracts.d.ts",
     "tests/browser-globals.d.ts",
     "tests/webkit-ai.ts",
-    "tests/webkit-typography.ts"
+    "tests/webkit-typography.ts",
+    "tests/webkit-shared-views.ts"
   ]
 }

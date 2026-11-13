@@ -37,6 +37,8 @@ interface Command {
 let sequence = 0;
 
 export class MarkdownDocument {
+  revision = 0;
+  lastEdit: { from: number; to: number; insertedLength: number } | null = null;
   text: string;
   nodes: DocumentNode[] = [];
   root: DocumentRoot = { children: [] };
@@ -132,6 +134,13 @@ export class MarkdownDocument {
     return this.serializedMarkdown;
   }
   private richParsing = false;
+  // A sleeping tab retains text and delta history, without parsed blocks/tokens.
+  suspendParsing() {
+    if (this.compositionSession || this.sourceSession) return;
+    this.closeGroup(); this.nodes = []; this.root = { children: [] }; this.environment = {};
+    this.richParsing = false;
+  }
+  resumeParsing() { if (!this.nodes.length) this.parse(); }
   enableRichParsing() {
     if (this.richParsing) return;
     this.richParsing = true;
@@ -396,6 +405,7 @@ export class MarkdownDocument {
     if (removed === insert) return false;
     removed = detachedSpan(removed); insert = detachedSpan(insert);
     this.text = this.text.slice(0, from) + insert + this.text.slice(to);
+    this.revision++; this.lastEdit = { from, to, insertedLength: insert.length };
     const now = Date.now(), previous = this.undoStack.at(-1);
     const merge = this.group && ["typing", "composition"].includes(kind) && previous?.kind === kind &&
       (kind === "composition" || now - previous.time < 800) && previous.after.head === before.head && before.anchor === before.head;
@@ -425,6 +435,7 @@ export class MarkdownDocument {
     this.lineEnding = lineEnding;
     this.original = source;
     this.text = source.replace(/\r\n/g, "\n");
+    this.revision++; this.lastEdit = null;
     this.normalizedOriginal = this.text;
     this.serializedText = null;
     this.selection = {
@@ -441,6 +452,7 @@ export class MarkdownDocument {
     if (!command) return false;
     this.redoStack.push(command);
     this.text = this.text.slice(0, command.from) + command.removed + this.text.slice(command.from + command.inserted.length);
+    this.revision++; this.lastEdit = { from: command.from, to: command.from + command.inserted.length, insertedLength: command.removed.length };
     this.selection = { ...command.before };
     this.closeGroup();
     this.parse({from:command.from,to:command.from+command.inserted.length,insert:command.removed,removed:command.inserted});
@@ -451,6 +463,7 @@ export class MarkdownDocument {
     if (!command) return false;
     this.undoStack.push(command);
     this.text = this.text.slice(0, command.from) + command.inserted + this.text.slice(command.from + command.removed.length);
+    this.revision++; this.lastEdit = { from: command.from, to: command.from + command.removed.length, insertedLength: command.inserted.length };
     this.selection = { ...command.after };
     this.closeGroup();
     this.parse({from:command.from,to:command.from+command.removed.length,insert:command.inserted,removed:command.removed});

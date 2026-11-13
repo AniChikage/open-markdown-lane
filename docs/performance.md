@@ -76,3 +76,23 @@ The 0.16.4 run also measured 21 ms for middle-row family-emoji Backspace, 143 ms
 A separate Node component benchmark used a 37,400,034-byte code document and four edit/undo samples per operation. Model-only newline replacements changed from 331–395 ms to 5–20 ms; backtick replacements changed from 311–347 ms to 5–6 ms. These exclude layout, paint, platform IMEs, persistence and React. The desktop timings above are small local samples, not speed guarantees or physical-IME latency. Initial parsing, very wide tables, column-wide changes, complex cells, plugins and concurrent large tabs still need their own cost budgets.
 
 Windows acceptance of the initial 0.16.3 candidate caught an undo-group bug after rapid Left/Right navigation and emoji Backspace. That candidate was not published. In 0.16.4, navigation ends the group on keydown and local code selection transactions end their group; correctness no longer depends on separate browser selectionchange notifications. The 80,000-row installed acceptance retains the immediate key sequence and exact undo assertions.
+
+
+## Background views and shared documents in 0.25.0
+
+A document now keeps its text and bounded delta history independently of editor DOM. The workspace retains visible panes, active batch targets and pending image imports, plus at most two warm background tabs. Warm admission uses UTF-16 text estimates (1 MiB per background tab, 2 MiB combined), and idle views expire after 30 seconds on the periodic check. These are cache admission thresholds, not limits on document editing or total app memory. Unloading drops DOM, CodeMirror instances, listeners and eligible parsed caches; switching back rebuilds presentation while retaining session undo/redo.
+
+Two views of the same document share one model and history. Source peers receive changed spans on ordinary edits instead of a whole-document CodeMirror replacement. Each view retains its mode, caret and scrolling. Metadata is captured with session persistence without rerendering the entire React app for every caret movement. Composition defers peer updates until commit.
+
+A single macOS arm64 Electron comparison used the same 12 files (500 repeated Markdown paragraphs per file, plus Chinese text, a table and code), visited each tab, then explicitly collected renderer garbage. The baseline loaded the compiled 0.24.6 frontend through the same isolated Electron host. No user documents or model configuration were used.
+
+| Diagnostic | 0.24.6 | 0.25.0 |
+| --- | ---: | ---: |
+| Mounted document editors after visiting 12 tabs | 12 | 3 |
+| Whole-window DOM elements | 61,046 | 15,630 |
+| Renderer JavaScript used heap after GC | 17.36 MiB | 13.88 MiB |
+| Chromium embedder heap diagnostic after GC | 23.68 MiB | 11.17 MiB |
+
+This is one controlled fixture run. Heap diagnostics are **not process RSS**, total system memory or a cross-editor ranking. They exclude text/history growth in other workloads, external resources, GPU allocations and much of the host runtime. Switching back trades reconstruction time for fewer resident views. No universal memory reduction or typing-latency guarantee follows from this sample.
+
+`npm run test:shared-views` verifies eviction with exact undo/redo, a delayed image import under cache pressure, list/table/code/source Chinese composition, opposite-pane undo, a shared code block over 5 MiB, and an actual process restart with unsaved text and both view states. `node scripts/test-webkit.mts --shared-views` exercises the native WebKit host separately. Physical candidate-window acceptance is recorded separately in the verification notes.

@@ -1,9 +1,11 @@
 import { t } from "../i18n";
-import { memo, useCallback, useLayoutEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { Plus, X, Columns2, Rows2, ArrowLeftRight, FileText } from "lucide-react";
 import { MarkdownEditor } from "../editor/MarkdownEditor";
 import type { EditorHandle } from "../editor/MarkdownEditor";
+import { EditorBuffer, residentTabs, mirrorKey } from "../editor/EditorBuffer";
+import type { EditorViewState } from "../../shared/contracts.js";
 import type { DocumentRecord } from "../types";
 import type { Preferences } from "../preferences";
 import type { WorkspaceLayout } from "../workspace";
@@ -14,6 +16,8 @@ import type { TabCloseKind } from "../tabActions";
 
 interface EditorProps {
   record: DocumentRecord;
+  buffer: EditorBuffer;
+  mirror: boolean;
   active: boolean;
   visible: boolean;
   slot: "primary" | "secondary";
@@ -22,7 +26,8 @@ interface EditorProps {
   readOnly: boolean;
   preferences: Preferences;
   typewriter: boolean;
-  select(id: string): boolean;
+  select(id: string, mirror?: boolean): boolean;
+  viewState(id: string, mirror: boolean, state: EditorViewState): void;
   register(id: string, handle: EditorHandle | null): void;
   change(id: string, text: string): void;
   error(text: string): void;
@@ -35,20 +40,23 @@ interface EditorProps {
 }
 const DocumentView = memo(function DocumentView(props: EditorProps) {
   const { record, active, visible, slot, split } = props;
-  const register = useCallback((handle: EditorHandle | null) => props.register(record.id, handle), [props.register, record.id]);
-  return <section id={`document-${record.id}`} role="tabpanel" aria-label={record.name} className={`document-editor workspace-document ${slot}`} data-document-id={record.id} data-active={active} hidden={!visible}
-    onPointerDownCapture={event => { if (!active && !props.select(record.id)) event.preventDefault(); }}
-    onFocusCapture={() => { if (!active) props.select(record.id); }}>
-    {split && <div className={`pane-heading ${active ? "active" : ""}`} onPointerDown={() => props.select(record.id)}>
+  const key = props.mirror ? mirrorKey(record.id) : record.id;
+  const register = useCallback((handle: EditorHandle | null) => props.register(key, handle), [props.register, key]);
+  const select = () => props.select(record.id, props.mirror);
+  return <section id={`document-${key}`} role="tabpanel" aria-label={record.name} className={`document-editor workspace-document ${slot}`} data-document-id={record.id} data-view-id={key} data-active={active} hidden={!visible}
+    onPointerDownCapture={event => { if (!active && !select()) event.preventDefault(); }}
+    onFocusCapture={() => { if (!active) select(); }}>
+    {split && <div className={`pane-heading ${active ? "active" : ""}`} onPointerDown={() => select()}>
       <span title={record.path || record.name}>{record.name}{record.content !== record.savedContent ? " •" : ""}</span>
-      <button className="pane-mode" aria-label={`${record.name} ${props.rendered ? t("切换源码") : t("切换即时渲染")}`} onClick={() => { if (props.select(record.id)) props.mode(record.id, !props.rendered); }}>{props.rendered ? t("源码") : t("即时渲染")}</button>
-      <button className="icon-button" aria-label={t("关闭{0}窗格", slot === "primary" ? "第一个" : "第二个")} title={t("关闭此窗格，保留文档")} onClick={() => props.closePane(record.id)}><X size={14} /></button>
+      <button className="pane-mode" aria-label={`${record.name} ${props.rendered ? t("切换源码") : t("切换即时渲染")}`} onClick={() => { if (select()) props.mode(key, !props.rendered); }}>{props.rendered ? t("源码") : t("即时渲染")}</button>
+      <button className="icon-button" aria-label={t("关闭{0}窗格", slot === "primary" ? "第一个" : "第二个")} title={t("关闭此窗格，保留文档")} onClick={() => props.closePane(key)}><X size={14} /></button>
     </div>}
-    <MarkdownEditor key={`${record.id}-${record.lineEnding}`} ref={register} document={record} rendered={props.rendered} active={active} readOnly={props.readOnly} preferences={props.preferences} typewriter={props.typewriter}
-      onChange={text => props.change(record.id, text)} onError={props.error} onCursor={(line,column) => props.cursor(record.id,line,column)} onSelection={text => props.selection(record.id,text)} onCompositionEnd={() => props.compositionEnd(record.id)} onCommand={action => props.command(record.id, action)} />
+    <MarkdownEditor key={`${record.id}-${record.lineEnding}-${props.buffer.generation}`} ref={register} document={record} buffer={props.buffer} viewSlot={props.mirror ? "secondary" : "primary"} onViewState={state => props.viewState(record.id, props.mirror, state)} rendered={props.rendered} active={active} readOnly={props.readOnly} preferences={props.preferences} typewriter={props.typewriter}
+      onChange={text => props.change(record.id, text)} onError={props.error} onCursor={(line,column) => { if (active) props.cursor(record.id,line,column); }} onSelection={text => { if (active) props.selection(record.id,text); }} onCompositionEnd={() => props.compositionEnd(record.id)} onCommand={action => props.command(record.id, action)} />
   </section>;
 });
-interface Props extends Omit<EditorProps, "record" | "active" | "visible" | "slot" | "split" | "rendered"> {
+interface Props extends Omit<EditorProps, "record" | "buffer" | "mirror" | "active" | "visible" | "slot" | "split" | "rendered"> {
+  buffers: Map<string, EditorBuffer>;
   retainedIds?: string[];
   documents: DocumentRecord[];
   activeId: string;
@@ -58,6 +66,7 @@ interface Props extends Omit<EditorProps, "record" | "active" | "visible" | "slo
   close(id: string): void;
   reorder(source: string, target: string): void;
   split(direction: "columns" | "rows"): void;
+  sameDocument(): void;
   swap(): void;
   resize(ratio: number): void;
   autosave: boolean;
@@ -65,7 +74,10 @@ interface Props extends Omit<EditorProps, "record" | "active" | "visible" | "slo
   composing(): boolean;
 }
 export function EditorWorkspace(props: Props) {
-  const tabs = useRef<HTMLDivElement>(null), body = useRef<HTMLDivElement>(null), visited = useRef(new Set<string>());
+  const tabs = useRef<HTMLDivElement>(null), body = useRef<HTMLDivElement>(null);
+  const buffers = { current: props.buffers }, recent = useRef(new Map<string, number>());
+  const [, tick] = useState(0);
+  useEffect(() => { const timer = setInterval(() => tick(value => value + 1), 10_000); return () => clearInterval(timer); }, []);
   const layout = props.layout;
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number; origin: HTMLElement } | null>(null);
@@ -83,15 +95,24 @@ export function EditorWorkspace(props: Props) {
     { id: "copy-name", label: t("复制文件名（含扩展名）") }, { id: "copy-stem", label: t("复制文件名（不含扩展名）") },
     { id: "copy-path", label: t("复制完整路径"), disabled: !record.path }, { id: "copy-quoted-path", label: t("复制带引号完整路径"), disabled: !record.path }, { id: "copy-directory", label: t("复制所在文件夹路径"), disabled: !record.path }, null,
     { id: "reveal", label: t("在文件管理器中显示"), disabled: !record.path }, { id: "open-directory", label: t("打开所在文件夹"), disabled: !record.path }, { id: "rename", label: t("重命名文件…"), disabled: !record.path }, null,
+    { id: "split-same", label: t("同一文档双视图") },
     { id: "split-right", label: t("向右拆分编辑器") }, { id: "split-down", label: t("向下拆分编辑器") },
     { id: "close-pane", label: t("关闭此窗格"), disabled: !layout || (layout.primaryId !== record.id && layout.secondaryId !== record.id) },
     { id: "outline", label: t("显示大纲") }, { id: "autosave", label: t("自动保存已有文件"), checked: props.autosave },
   ] : [];
   const visible = new Set(layout ? [layout.primaryId,layout.secondaryId] : [props.activeId]);
-  for (const id of props.retainedIds || []) visited.current.add(id);
-  for (const id of visible) visited.current.add(id);
+  const now = Date.now(), pinned = new Set([...visible, ...(props.retainedIds || [])]);
+  for (const [id, buffer] of buffers.current) if (buffer.pending) pinned.add(id);
+  for (const id of pinned) recent.current.set(id, now);
   const ids = new Set(props.documents.map(record => record.id));
-  for (const id of visited.current) if (!ids.has(id)) visited.current.delete(id);
+  for (const id of buffers.current.keys()) if (!ids.has(id)) { buffers.current.delete(id); recent.current.delete(id); }
+  const resident = residentTabs(props.documents, pinned, recent.current, now);
+  const mounted = props.documents.filter(record => resident.has(record.id));
+  for (const record of mounted) if (!buffers.current.has(record.id)) buffers.current.set(record.id, new EditorBuffer(record));
+  const isMirror = !!layout?.sameDocument && layout.primaryId === layout.secondaryId;
+  if (isMirror) buffers.current.get(layout.primaryId)?.share();
+  const views = mounted.map(record => ({ record, mirror: false }));
+  if (isMirror) views.push({ record: props.documents.find(record => record.id === layout.primaryId)!, mirror: true });
   useLayoutEffect(() => { tabs.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({block:"nearest",inline:"nearest"}); }, [props.activeId]);
   function tabKey(event: KeyboardEvent, index: number) {
     if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) { event.preventDefault(); event.stopPropagation(); openMenu(props.documents[index].id, event.currentTarget as HTMLElement); return; }
@@ -121,12 +142,18 @@ export function EditorWorkspace(props: Props) {
         <button className="icon-button" aria-label={t("新建标签页")} title={t("新建标签页")} onClick={props.create}><Plus size={16} /></button>
         <button className="icon-button" aria-label={t("左右分屏")} title={t("左右分屏")} aria-pressed={layout?.direction === "columns"} onClick={() => props.split("columns")}><Columns2 size={16} /></button>
         <button className="icon-button" aria-label={t("上下分屏")} title={t("上下分屏")} aria-pressed={layout?.direction === "rows"} onClick={() => props.split("rows")}><Rows2 size={16} /></button>
+        <button className="icon-button" aria-label={t("同一文档双视图")} title={t("同一文档双视图")} aria-pressed={isMirror} onClick={props.sameDocument}><FileText size={15} /></button>
         {layout && <button className="icon-button" aria-label={t("交换窗格")} title={t("交换窗格")} onClick={props.swap}><ArrowLeftRight size={15} /></button>}
       </div>
     </div>
     <div ref={body} className={`workspace-body ${layout ? `split-${layout.direction}` : ""}`} style={grid}>
-      {props.documents.filter(record => visited.current.has(record.id)).map(record => <DocumentView key={record.id} record={record} active={record.id === props.activeId} visible={visible.has(record.id)} slot={layout?.secondaryId === record.id ? "secondary" : "primary"} split={!!layout} rendered={props.modes[record.id] !== false} readOnly={props.readOnly} preferences={props.preferences} typewriter={props.typewriter}
-        select={props.select} register={props.register} change={props.change} error={props.error} cursor={props.cursor} selection={props.selection} compositionEnd={props.compositionEnd} mode={props.mode} closePane={props.closePane} command={props.command} />)}
+      {views.map(({ record, mirror }) => {
+        const key = mirror ? mirrorKey(record.id) : record.id;
+        const state = buffers.current.get(record.id)?.views[mirror ? 'secondary' : 'primary'] || record.editorViews?.[mirror ? 'secondary' : 'primary'];
+        const active = record.id === props.activeId && (!isMirror || (layout?.activePane === 'secondary') === mirror);
+        return <DocumentView key={key} record={record} buffer={buffers.current.get(record.id)!} mirror={mirror} active={active} visible={visible.has(record.id)} slot={(isMirror ? mirror !== !!layout?.reversed : layout?.secondaryId === record.id) ? "secondary" : "primary"} split={!!layout} rendered={props.modes[key] ?? state?.rendered ?? !mirror} readOnly={props.readOnly} preferences={props.preferences} typewriter={props.typewriter}
+          select={props.select} register={props.register} change={props.change} viewState={props.viewState} error={props.error} cursor={props.cursor} selection={props.selection} compositionEnd={props.compositionEnd} mode={props.mode} closePane={props.closePane} command={props.command} />;
+      })}
       {layout && <div className="pane-divider" role="separator" aria-label={t("调整分屏比例")} aria-orientation={layout.direction === "columns" ? "vertical" : "horizontal"} aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(layout.ratio*100)} tabIndex={0}
         onDoubleClick={() => props.resize(.5)} onKeyDown={event => { if(["ArrowLeft","ArrowUp","ArrowRight","ArrowDown","Home","End"].includes(event.key)){event.preventDefault();props.resize(event.key==="Home"?.2:event.key==="End"?.8:layout.ratio+(["ArrowRight","ArrowDown"].includes(event.key)?.05:-.05));} }}
         onPointerDown={event => {if(event.button!==0)return;event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);}}

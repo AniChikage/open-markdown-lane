@@ -42,7 +42,11 @@ import type { BlockArguments } from "./blockCommands.ts";
 import type { SelectionBookmark } from "./model.ts";
 import { ContextMenu } from "../components/ContextMenu";
 import type { ContextMenuEntry } from "../components/ContextMenu";
+import { viewState } from './EditorBuffer';
+import type { EditorBuffer, ViewSlot, SharedChange } from './EditorBuffer';
+import type { EditorViewState } from '../../shared/contracts.js';
 export interface EditorHandle {
+  snapshotView(): void;
   view(): EditorView | null;
   captureRewrite(): RewriteSelection | null;
   rewriteCurrent(selection: RewriteSelection): boolean;
@@ -66,6 +70,9 @@ export interface EditorHandle {
   transform(change: (text: string) => string): void;
 }
 interface Props {
+  buffer?: EditorBuffer;
+  viewSlot?: ViewSlot;
+  onViewState?(state: EditorViewState): void;
   document: DocumentRecord;
   rendered: boolean;
   active?: boolean;
@@ -82,7 +89,7 @@ interface Props {
 type EditorMenu = NonNullable<ReturnType<RichEditor["contextSelection"]>> & { x: number; y: number; source: string; rendered: boolean; image?: ImageReference };
 export const MarkdownEditor = forwardRef<EditorHandle, Props>(
   function MarkdownEditor(
-    { document: record, rendered, active = true, readOnly = false, preferences, typewriter = false, onChange, onError, onCursor, onSelection, onCompositionEnd, onCommand },
+    { document: record, buffer, viewSlot = 'primary', onViewState, rendered, active = true, readOnly = false, preferences, typewriter = false, onChange, onError, onCursor, onSelection, onCompositionEnd, onCommand },
     ref,
   ) {
     const languageBehavior = useRef(new Compartment());
@@ -106,8 +113,24 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
     const model = useRef<MarkdownDocument | null>(null),
       rich = useRef<RichEditor | null>(null),
       source = useRef<EditorView | null>(null);
-    const callbacks = useRef({ onChange, onError, onCursor, onSelection, onCompositionEnd, onCommand });
-    callbacks.current = { onChange, onError, onCursor, onSelection, onCompositionEnd, onCommand };
+    const callbacks = useRef({ onChange, onError, onCursor, onSelection, onCompositionEnd, onCommand, onViewState });
+    callbacks.current = { onChange, onError, onCursor, onSelection, onCompositionEnd, onCommand, onViewState };
+    const viewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    function rememberView(selection = model.current?.selection) {
+      if (!buffer || !selection || isComposing()) return;
+      buffer.views[viewSlot] = { rendered: activeMode.current, ...selection, richScroll: root.current?.parentElement?.scrollTop || 0, sourceScroll: source.current?.scrollDOM.scrollTop || 0 };
+      if (viewTimer.current !== null) clearTimeout(viewTimer.current);
+      viewTimer.current = setTimeout(() => { viewTimer.current = null; callbacks.current.onViewState?.(buffer.views[viewSlot]!); }, 150);
+    }
+    function refreshPeer(change?: SharedChange) {
+      const doc = model.current; if (!doc || isComposing()) return;
+      const owner = doc.selection, state = viewState(buffer?.views[viewSlot], doc.text.length);
+      doc.selection = { anchor: state.anchor, head: state.head };
+      // Release an inactive local-code editor before updating its backing text.
+      rich.current?.releaseFence();
+      if (activeMode.current) rich.current?.render(false); else syncSource(change);
+      doc.selection = owner;
+    }
     const initial = useRef(record),
       requested = useRef(rendered),
       activeMode = useRef(rendered);
@@ -221,6 +244,7 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       if (typewriter && source.current && !activeMode.current) source.current.dispatch({ effects: EditorView.scrollIntoView(source.current.state.selection.main.head, { y: "center" }) });
     }
     function compositionFinished() {
+      rememberView(); buffer?.publish(viewSlot);
       if (pendingOptions.current) applyViewOptions();
       callbacks.current.onCompositionEnd?.();
       setMode(requested.current);
@@ -260,6 +284,7 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       historyState();
     }
     const publish = () => {
+      if (!isComposing()) { rememberView(); buffer?.publish(viewSlot); }
       callbacks.current.onChange(model.current!.toMarkdown());
       historyState();
     };
@@ -286,14 +311,14 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       if (!match) { findNext(); return; }
       doc.replace(from, to, match.replacement, "replace"); rich.current?.render(false); publish(); findNext();
     }
-    function syncSource() {
+    function syncSource(change?: SharedChange) {
       const view = source.current,
         doc = model.current;
       if (!view || !doc) return;
       syncing.current = true;
       view.dispatch({
         changes:
-          view.state.doc.toString() === doc.text
+          change && change.previousLength === view.state.doc.length ? { from: change.from, to: change.to, insert: change.insert } : view.state.doc.toString() === doc.text
             ? undefined
             : { from: 0, to: view.state.doc.length, insert: doc.text },
         selection: { anchor: doc.selection.anchor, head: doc.selection.head },
@@ -316,7 +341,11 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
         source.current?.focus();
       }
     }
-    function insertImage(file: File) { imageQueue.current = imageQueue.current.then(() => insertImageNow(file)); return imageQueue.current; }
+    function insertImage(file: File) {
+      if (buffer) buffer.pending++;
+      imageQueue.current = imageQueue.current.then(() => insertImageNow(file)).finally(() => { if (buffer) buffer.pending--; });
+      return imageQueue.current;
+    }
     async function insertImageNow(file: File) {
       if (viewOptions.current.readOnly) return;
       try {
@@ -414,6 +443,7 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
                 if (!sourceComposing.current) doc.closeGroup();
               }
               if (update.selectionSet || update.docChanged) {
+                if (viewOptions.current.active) rememberView();
                 const line = update.state.doc.lineAt(selected.head);
                 callbacks.current.onCursor(
                   line.number,
@@ -503,14 +533,14 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
     function setMode(value: boolean) {
       const doc = model.current;
       if (!doc) return;
-      if (isComposing()) return;
+      if (isComposing() || buffer?.composing()) return;
       doc.closeGroup();
       if (value) {
         if (!activeMode.current && source.current) {
           const s = source.current.state.selection.main;
           doc.selection = { anchor: s.anchor, head: s.head };
         }
-        doc.endSourceSession();
+        if (!buffer?.shared) doc.endSourceSession();
         doc.refreshCaret();
         rich.current?.render(false);
       } else {
@@ -518,17 +548,24 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
           doc.selection = rich.current?.bookmark() || doc.selection;
           rich.current?.releaseFence();
         }
-        doc.beginSourceSession();
+        if (!buffer?.shared) doc.beginSourceSession();
         ensureSource();
         syncSource();
       }
       activeMode.current = value;
+      rememberView();
       setVisibleMode(value);
       historyState();
     }
     useImperativeHandle(
       ref,
       () => ({
+        snapshotView: () => {
+          if (!buffer || !model.current || isComposing()) return;
+          const previous = viewState(buffer.views[viewSlot], model.current.text.length);
+          const selection = viewOptions.current.active ? model.current.selection : previous;
+          buffer.views[viewSlot] = { rendered: activeMode.current, anchor: selection.anchor, head: selection.head, richScroll: root.current?.parentElement?.scrollTop || 0, sourceScroll: source.current?.scrollDOM.scrollTop || 0 };
+        },
         rewriteCurrent: selection => !!model.current && viewOptions.current.active && !viewOptions.current.readOnly && selectionCurrent(selection, initial.current.id, model.current.text),
         captureRewrite: () => {
           const doc = model.current; if (!doc || editingBlocked()) return null;
@@ -638,14 +675,18 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
     );
     useEffect(() => {
       const original = initial.current;
-      model.current = new MarkdownDocument(
+      model.current = buffer?.model || new MarkdownDocument(
         original.content,
         original.lineEnding || "\n",
       );
-      if(original.content.length>300_000)model.current.selection={anchor:0,head:0};
+      if (buffer) {
+        model.current.resumeParsing();
+        const state = viewState(buffer.views[viewSlot], model.current.text.length);
+        model.current.selection = { anchor: state.anchor, head: state.head };
+      } else if(original.content.length>300_000)model.current.selection={anchor:0,head:0};
       rich.current = new RichEditor(root.current!, model.current, original.id, {
         change: publish,
-        cursor: (line, column) => { callbacks.current.onCursor(line, column); callbacks.current.onSelection?.(rich.current?.clipboard().plain || ""); historyState(); },
+        cursor: (line, column) => { if (viewOptions.current.active) rememberView(); callbacks.current.onCursor(line, column); callbacks.current.onSelection?.(rich.current?.clipboard().plain || ""); historyState(); },
         image: (file) => void insertImage(file),
         link: (url) =>
           void (/^(?:https?:|mailto:)/i.test(url) ? host.openLink(url) : host.openDocumentLink(original.id, url))
@@ -653,14 +694,28 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
         compositionFinished,
         error: message => callbacks.current.onError(message),
       });
+      const savedView = buffer?.views[viewSlot];
       setMode(requested.current);
+      if (savedView) {
+        if (root.current?.parentElement) root.current.parentElement.scrollTop = savedView.richScroll;
+        if (source.current) source.current.scrollDOM.scrollTop = savedView.sourceScroll;
+      }
+      const detach = buffer?.attach(viewSlot, refreshPeer, isComposing);
+      const scroller = root.current?.parentElement;
+      const rememberScroll = () => rememberView(buffer?.views[viewSlot] || model.current?.selection);
+      scroller?.addEventListener('scroll', rememberScroll, { passive: true });
+      sourceParent.current?.addEventListener('scroll', rememberScroll, { passive: true, capture: true });
       if (!root.current?.closest(".document-editor")?.hasAttribute("hidden")) focusEditor();
       return () => {
+        if (viewTimer.current !== null) clearTimeout(viewTimer.current);
+        scroller?.removeEventListener('scroll', rememberScroll);
+        sourceParent.current?.removeEventListener('scroll', rememberScroll, true);
         if (compositionTimer.current !== null) clearTimeout(compositionTimer.current);
         rich.current?.destroy();
         source.current?.destroy();
         rich.current = null;
         source.current = null;
+        detach?.();
       };
     }, []);
     useLayoutEffect(() => {
@@ -671,13 +726,14 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       if (
         !model.current ||
         model.current.toMarkdown() === record.content ||
-        isComposing()
+        isComposing() || buffer?.composing()
       )
         return;
       model.current.replaceExternal(record.content, record.lineEnding);
+      buffer?.publish(viewSlot);
       if (activeMode.current) rich.current?.render(false);
       else {
-        model.current.beginSourceSession();
+        if (!buffer?.shared) model.current.beginSourceSession();
         syncSource();
       }
       historyState();
@@ -694,6 +750,13 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       if (source.current) source.current.dispatch({ effects: languageBehavior.current.reconfigure(phrases()) });
     }, [preferences?.language]);
     useLayoutEffect(() => {
+      if (active && buffer && model.current) {
+        const state = viewState(buffer.views[viewSlot], model.current.text.length);
+        model.current.closeGroup(); model.current.selection = { anchor: state.anchor, head: state.head };
+        if (!activeMode.current) syncSource();
+        if (root.current?.parentElement) root.current.parentElement.scrollTop = state.richScroll;
+        if (source.current) source.current.scrollDOM.scrollTop = state.sourceScroll;
+      }
       // Focus once after the mode's DOM is visible, before keyboard input.
       // A delayed frame can restore an older caret after a navigation key.
       if (!root.current?.closest(".document-editor")?.hasAttribute("hidden"))
