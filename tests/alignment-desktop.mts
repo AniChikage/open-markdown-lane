@@ -19,7 +19,7 @@ const originalPush = passed.push.bind(passed); passed.push = (...values) => { co
 page.on("pageerror", error => errors.push(error.message)); await mkdir(qa, { recursive: true });
 const rich = page.locator(".document-editor:not([hidden]) .rich-document");
 async function menu(name: string) { await page.getByRole("button", { name: "更多操作", exact: true }).click(); await page.getByRole("menuitem", { name, exact: true }).click(); }
-async function source() { if (await page.locator(".source-toggle").getAttribute("aria-pressed") !== "true") await page.locator(".source-toggle").click(); return (await page.locator(".document-editor:not([hidden]) .source-surface .cm-line").allTextContents()).join("\n"); }
+async function source() { if (await page.locator(".source-toggle").getAttribute("aria-pressed") !== "true") await page.locator(".source-toggle").click(); await expect(page.locator(".document-editor:not([hidden]) .source-surface .cm-content")).toBeVisible(); return (await page.locator(".document-editor:not([hidden]) .source-surface .cm-line").allTextContents()).join("\n"); }
 async function richMode() { if (await page.locator(".source-toggle").getAttribute("aria-pressed") === "true") await page.locator(".source-toggle").click(); await expect(rich).toBeVisible(); }
 try {
   await expect(rich.locator(".markdown-alert-note")).toBeVisible(); await expect(rich.locator(".md-html .fence-preview strong")).toHaveText("HTML 预览");
