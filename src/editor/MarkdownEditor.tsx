@@ -126,6 +126,8 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       const doc = model.current; if (!doc || isComposing()) return;
       const owner = doc.selection, state = viewState(buffer?.views[viewSlot], doc.text.length);
       doc.selection = { anchor: state.anchor, head: state.head };
+      if (pendingOptions.current) applyViewOptions();
+      if (activeMode.current !== requested.current || !requested.current && !source.current) setMode(requested.current);
       // Release an inactive local-code editor before updating its backing text.
       rich.current?.releaseFence();
       if (activeMode.current) rich.current?.render(false); else syncSource(change);
@@ -232,7 +234,7 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       return true;
     }
     function applyViewOptions() {
-      if (isComposing()) { pendingOptions.current = true; return; }
+      if (isComposing() || buffer?.composing()) { pendingOptions.current = true; return; }
       pendingOptions.current = false;
       const { preferences, typewriter, readOnly } = viewOptions.current;
       if (rich.current) {
@@ -673,12 +675,13 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       }),
       [],
     );
-    useEffect(() => {
+    useLayoutEffect(() => {
       const original = initial.current;
       model.current = buffer?.model || new MarkdownDocument(
         original.content,
         original.lineEnding || "\n",
       );
+      const ownerSelection = model.current.selection;
       if (buffer) {
         model.current.resumeParsing();
         const state = viewState(buffer.views[viewSlot], model.current.text.length);
@@ -699,12 +702,15 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       if (savedView) {
         if (root.current?.parentElement) root.current.parentElement.scrollTop = savedView.richScroll;
         if (source.current) source.current.scrollDOM.scrollTop = savedView.sourceScroll;
+        if (buffer) buffer.views[viewSlot] = { ...savedView, rendered: activeMode.current };
       }
       const detach = buffer?.attach(viewSlot, refreshPeer, isComposing);
       const scroller = root.current?.parentElement;
       const rememberScroll = () => rememberView(buffer?.views[viewSlot] || model.current?.selection);
       scroller?.addEventListener('scroll', rememberScroll, { passive: true });
       sourceParent.current?.addEventListener('scroll', rememberScroll, { passive: true, capture: true });
+      root.current?.closest<HTMLElement>('.editor-surface')?.setAttribute('data-editor-ready', 'true');
+      if (!viewOptions.current.active) model.current.selection = ownerSelection;
       if (!root.current?.closest(".document-editor")?.hasAttribute("hidden")) focusEditor();
       return () => {
         if (viewTimer.current !== null) clearTimeout(viewTimer.current);
@@ -719,8 +725,9 @@ export const MarkdownEditor = forwardRef<EditorHandle, Props>(
       };
     }, []);
     useLayoutEffect(() => {
+      const changed = requested.current !== rendered || activeMode.current !== rendered;
       requested.current = rendered;
-      setMode(rendered);
+      if (changed) setMode(rendered);
     }, [rendered]);
     useEffect(() => {
       if (

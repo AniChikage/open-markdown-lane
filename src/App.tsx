@@ -234,6 +234,7 @@ export default function App() {
   const closePane = useCallback((key: string) => {
     const current = sessionRef.current, layout = current.workspace;
     if (composing()) { current.setMessage(t("请先完成当前输入法组合输入。")); return; }
+    if (layout?.sameDocument && buffers.current.get(layout.primaryId)?.pending) { current.setMessage(t("图片正在导入，请完成后再关闭窗格。")); return; }
     if (layout?.sameDocument && key === layout.primaryId) {
       const buffer = buffers.current.get(key), surviving = buffer?.views.secondary;
       if (buffer && surviving) {
@@ -267,7 +268,7 @@ export default function App() {
       else if (action === "rename" && record.path) setFileOperation({ action: "rename", path: record.path, name: record.name });
       else if (action === "split-same") { if (current.setActiveId(id)) splitSameDocument(); }
       else if (action === "split-right" || action === "split-down") { if (current.setActiveId(id)) await current.split(action === "split-right" ? "columns" : "rows"); }
-      else if (action === "close-pane") current.closePane(id);
+      else if (action === "close-pane") closePane(current.workspace?.sameDocument && current.workspace.activePane === 'secondary' ? mirrorKey(id) : id);
       else if (action === "autosave") current.setAutosave(value => !value);
       else if (action === "outline") commands.current({ action });
       setTabFocusRequest(request => request + 1);

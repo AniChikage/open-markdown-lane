@@ -16,10 +16,12 @@ const env:Record<string,string>={...process.env,OPEN_MARKDOWN_LANE_DATA_DIR:prof
 let app!:import('playwright').ElectronApplication, page!:import('playwright').Page;const errors:string[]=[],checks:string[]=[], mod=process.platform==='darwin'?'Meta':'Control';
 const pane=(mirror=false)=>process.env.LANE_BASELINE_DIST ? page.locator(`.document-editor[data-document-id="${records[0].id}"]`) : page.locator(`.document-editor[data-view-id="${mirror?'mirror:':''}${records[0].id}"]`);
 async function command(action:string){await app.evaluate(({BrowserWindow},action)=>BrowserWindow.getAllWindows()[0].webContents.send('app:command',{action}),action);}
-async function launch(){app=await electron.launch({...(process.env.OPEN_MARKDOWN_LANE_EXECUTABLE?{executablePath:process.env.OPEN_MARKDOWN_LANE_EXECUTABLE,args:[]}:{args:[process.cwd()]}),env,timeout:30000});page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width:1380,height:900});await expect(page.getByRole('tab',{name:'Tab-0.md',exact:true})).toBeVisible({timeout:20000});}
+async function launch(){app=await electron.launch({...(process.env.OPEN_MARKDOWN_LANE_EXECUTABLE?{executablePath:process.env.OPEN_MARKDOWN_LANE_EXECUTABLE,args:[]}:{args:[process.cwd()]}),env,timeout:30000});page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));await page.evaluate(()=>{const scope=window as Window & {laneSharedFocus?:unknown[]};scope.laneSharedFocus=[];for(const type of ['focusin','pointerdown'])document.addEventListener(type,event=>{const target=event.target as HTMLElement;scope.laneSharedFocus!.push({type:event.type,view:target.closest<HTMLElement>('.document-editor')?.dataset.viewId,classes:target.className,stack:new Error().stack});},true);});await page.setViewportSize({width:1380,height:900});await expect(page.getByRole('tab',{name:'Tab-0.md',exact:true})).toBeVisible({timeout:20000});}
+async function recordLayout(name:string){const state=await recovery();await writeFile(path.join(qa,name+'.json'),JSON.stringify({workspace:state.workspace,views:state.documents[0].editorViews},null,2));}
 async function point(text:string,mirror=false){await pane(mirror).locator('.rich-document').evaluate((root:HTMLElement,text)=>{root.focus();const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=walker.nextNode()))if(!n.parentElement!.closest('.md-meta,.md-view')&&(n as Text).data.includes(text)){const at=(n as Text).data.indexOf(text)+text.length;getSelection()!.setBaseAndExtent(n,at,n,at);document.dispatchEvent(new Event('selectionchange'));return;}throw Error('missing '+text);},text);}
 const saved=async()=>await readFile(records[0].path!,'utf8');
 const recovery=async()=>JSON.parse(await readFile(path.join(profile,'session.json'),'utf8'));
+async function pasteImage(name:string){await pane().locator('.rich-document').evaluate((root,name)=>{const bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aNNsAAAAASUVORK5CYII='),c=>c.charCodeAt(0));const data=new DataTransfer();data.items.add(new File([bytes],name,{type:'image/png'}));root.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));},name);}
 try {
  await launch();
  if(process.env.LANE_BASELINE_DIST) {const file=path.join(process.env.LANE_BASELINE_DIST,'index.html');await app.evaluate(async({BrowserWindow},file)=>{await BrowserWindow.getAllWindows()[0].loadFile(file);},file);await expect(page.getByRole('tab',{name:'Tab-0.md',exact:true})).toBeVisible();}
@@ -41,10 +43,7 @@ try {
    ipcMain.removeHandler('document:image');
    ipcMain.handle('document:image',async(...args)=>{await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {laneImageRelease?:()=>void}).laneImageRelease=resolve;});return original(...args);});
  });
- await pane().locator('.rich-document').evaluate(root=>{
-   const bytes=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aNNsAAAAASUVORK5CYII='),c=>c.charCodeAt(0));
-   const data=new DataTransfer();data.items.add(new File([bytes],'pending.png',{type:'image/png'}));root.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));
- });
+ await pasteImage('pending.png');
  await expect.poll(()=>app.evaluate(()=>!!(globalThis as typeof globalThis & {laneImageRelease?:()=>void}).laneImageRelease)).toBe(true);
  for(let i=1;i<=4;i++)await page.getByRole('tab',{name:`Tab-${i}.md`,exact:true}).click();
  await expect(pane()).toHaveCount(1);await app.evaluate(()=>(globalThis as typeof globalThis & {laneImageRelease?:()=>void}).laneImageRelease!());
@@ -66,6 +65,11 @@ try {
    await command('other-pane');await command('undo');await expect.poll(saved).toBe(original);await command('other-pane');
  }
  console.log('CHECK',checks.length+1);checks.push('Two rendered views accept list/table/local-code composition and undo exactly from the opposite pane.');
+ await point('正文输入区：');await app.evaluate(()=>{(globalThis as typeof globalThis & {laneImageRelease?:()=>void}).laneImageRelease=undefined;});await pasteImage('pending-twin.png');
+ await expect.poll(()=>app.evaluate(()=>!!(globalThis as typeof globalThis & {laneImageRelease?:()=>void}).laneImageRelease)).toBe(true);
+ await page.getByRole('button',{name:'关闭第一个窗格',exact:true}).click();await expect(page.locator('.document-editor:not([hidden])')).toHaveCount(2);await expect(page.getByText('图片正在导入，请完成后再关闭窗格。',{exact:true})).toBeVisible();
+ await app.evaluate(()=>(globalThis as typeof globalThis & {laneImageRelease?:()=>void}).laneImageRelease!());await expect.poll(saved).toContain('![pending-twin.png](');await command('other-pane');await command('undo');await expect.poll(saved).toBe(original);
+ console.log('CHECK',checks.length+1);checks.push('Closing a shared pane waits for a pending image import, then keeps opposite-pane undo exact.');
  // Unsaved content and per-view mode/layout survive a real process restart.
  await command('source');await expect(source).toBeVisible();await command('other-pane');await point('正文输入区：');
  await command('autosave');
@@ -73,7 +77,8 @@ try {
  await expect.poll(async()=>(await recovery()).documents[0].content).toContain('未保存重启恢复');assert.equal(await saved(),original);
  await pane().locator('.rich-scroller').evaluate(e=>e.scrollTop=1600);await source.click();await page.keyboard.press(`${mod}+End`);
  await expect.poll(async()=>(await recovery()).workspace?.activePane).toBe('secondary');
- await app!.close();await launch();source=pane(true).locator('.source-surface .cm-content');
+ await recordLayout('before-restart');await app!.close();await recordLayout('after-quit');await launch();source=pane(true).locator('.source-surface .cm-content');
+ await writeFile(path.join(qa,'restart-focus.json'),JSON.stringify(await page.evaluate(()=>(window as Window & {laneSharedFocus?:unknown[]}).laneSharedFocus),null,2));
  await expect(page.locator('.document-editor:not([hidden])')).toHaveCount(2);await expect(pane(true)).toHaveAttribute('data-active','true');await expect(source).toBeVisible();
  assert.ok((await recovery()).documents[0].content.includes('未保存重启恢复'));assert.equal(await saved(),original);await expect.poll(()=>pane(true).locator('.cm-scroller').evaluate(e=>e.scrollTop)).toBeGreaterThan(1000);await source.press(`${mod}+Home`);await expect(source).toContainText('未保存重启恢复');await expect.poll(()=>pane().locator('.rich-scroller').evaluate(e=>e.scrollTop)).toBeGreaterThan(1000);
  await page.screenshot({path:path.join(qa,'shared-views-restored.png')});

@@ -934,5 +934,6 @@
   "右侧大纲": "Outline sidebar",
   "AI 侧栏": "AI sidebar",
   "有 {0} 个文件未能打开，可能已移动、删除或暂时无法访问。已有恢复草稿仍保留。": "{0} files could not be opened. They may have moved, been deleted, or be temporarily inaccessible. Existing recovery drafts are retained.",
-  "同一文档双视图": "Split this document"
+  "同一文档双视图": "Split this document",
+  "图片正在导入，请完成后再关闭窗格。": "Wait for the image import to finish before closing a pane."
 }

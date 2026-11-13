@@ -16,7 +16,7 @@ async function runWebKitSharedViewsTests() {
   let original='';
   try {
     await wait(()=>!!root()?.querySelector('h1'));const restored=await desktop.restore();if(!restored.ok||!restored.value)throw Error('Missing native fixture');original=restored.value.documents[0].content;
-    command('split-same');await wait(()=>document.querySelectorAll('.document-editor:not([hidden])').length===2&&!!pane(true).querySelector('.source-surface:not([hidden])'));
+    command('split-same');await wait(()=>document.querySelectorAll('.document-editor:not([hidden]) .editor-surface[data-editor-ready="true"]').length===2&&!!pane(true).querySelector('.source-surface:not([hidden]) .cm-content'));
     check(document.querySelectorAll('[role="tab"]').length===1,'native same-document split retains one tab and one document');
     for(const needle of ['普通','粗体','任务','B']) {
       const node=point(needle),before=node.data,at=getSelection()!.anchorOffset,target=node.parentElement!;
@@ -46,5 +46,5 @@ async function runWebKitSharedViewsTests() {
     check([...pane().querySelectorAll('.source-surface .cm-line')].map(n=>n.textContent).join('\n')===original,'native evicted buffer retains exact undo history');command('source');command('save');
     check(errors.length===0,'native shared views and eviction produce no runtime errors');
     return { sharedViewsOnly:true,passed,errors,source:original };
-  }catch(error){return {sharedViewsOnly:true,passed,errors,error:String(error),source:original};}
+  }catch(error){const peer=pane(true);return {sharedViewsOnly:true,passed,errors,error:String(error),source:original,actualSource:peer?[...peer.querySelectorAll('.source-surface .cm-line')].map(n=>n.textContent).join('\n'):null,primaryText:pane()?.querySelector('.rich-document')?.textContent?.slice(0,300),activeView:document.querySelector<HTMLElement>('.document-editor[data-active="true"]')?.dataset.viewId};}
 }
