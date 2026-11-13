@@ -9,6 +9,7 @@ This is an independent, unofficial project, unaffiliated with Typora. If you can
 - Restore both views, their modes/positions, active pane and geometry with unsaved text after a normal restart. Close either pane without closing the document. Scrolling is independent, not synchronized.
 - Closing a shared document clears its split without rearranging unrelated tabs.
 - Release background editor DOM using a bounded warm cache and idle expiry. Keep text and session undo/redo, and protect pending image imports and batch operations from eviction. Memory use still depends on document text, history and resources.
+- Share one idle recovery snapshot for text and view changes to reduce background work on large files.
 - Mirror source updates as changed spans instead of replacing the entire CodeMirror document for each edit. Guard pane switches, layout changes and commands during composition.
 - Fixed a macOS recovery race: an earlier session snapshot could retire a newly registered document before the editor adopted it. Recovery now distinguishes acknowledged tabs from newly opened files, with explicit close hints for tabs closed before their first snapshot.
 - Existing documents, model configuration, themes and preferences remain in their current storage locations. Step-by-step undo survives view eviction, not application restart; use version history across sessions.
@@ -23,4 +24,6 @@ The six installers and the control file are covered by `SHA256SUMS.txt`. macOS i
 
 ## Validation
 
-New installed-editor and native WebKit acceptance covers shared views, Chinese composition guards, opposite-pane undo/redo, background eviction and recovery. Existing issue regressions, large code/table editing, AI review, clipboard, plugins and Ubuntu 22.04/24.04 real FUSE gates remain required. See [versioned verification](verification.md) for actual results and remaining manual checks.
+265 unit tests passed. Release gates passed for macOS native WebKit, installed Windows/Linux apps, Everything preview and real FUSE mounts on Ubuntu 22.04/24.04. The public AppImageUpdate channel and all installer checksums were verified.
+
+The user checked Sogou Pinyin in the preview; final builds repeat automated composition tests. See [versioned verification](https://github.com/AniChikage/open-markdown-lane/blob/main/docs/verification.md) for the scope and remaining manual coverage.
