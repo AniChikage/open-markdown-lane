@@ -16,7 +16,7 @@ func runWindowChromeTests() throws {
   window.titleVisibility = .hidden
   window.titlebarAppearsTransparent = true
   let webView = WKWebView(frame: window.contentView!.bounds)
-  window.contentView = webView
+  window.setEditorWebView(webView)
   defer { window.close() }
 
   func event(_ point: NSPoint, type: NSEvent.EventType = .leftMouseDown) -> NSEvent {
@@ -29,8 +29,12 @@ func runWindowChromeTests() throws {
     guard condition else { throw NativeFailure("FAIL: " + name) }
     print("PASS: " + name)
   }
+  try expect(window.contentView is NSVisualEffectView && !window.isOpaque,
+    "window installs the native sidebar material behind a transparent web view")
   for size in [NSSize(width: 900, height: 640), NSSize(width: 660, height: 500), NSSize(width: 1380, height: 960)] {
     window.setContentSize(size)
+    try expect(webView.frame.size == window.contentView!.bounds.size,
+      "web content follows native material resizing: \(size)")
     for x in [CGFloat(100), webView.bounds.midX, webView.bounds.maxX - 10] {
       try expect(window.startsTitleBarDrag(event(NSPoint(x: x, y: 14))), "title and blank title bar start native dragging: \(x), \(size)")
     }

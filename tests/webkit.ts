@@ -141,6 +141,12 @@ try {
   const openPlugins = async () => { window.__openMarkdownLane.command({action:"plugins"}); await wait(() => document.querySelector<HTMLElement>('[role="dialog"][aria-label="插件管理"]')!); };
   const pluginCard = (name: string) => [...document.querySelectorAll<HTMLElement>('.plugin-card')].find(card => card.querySelector<HTMLElement>('h3')!?.textContent === name)!;
   const closePlugins = () => document.querySelector<HTMLElement>('[aria-label="关闭插件管理"]')!.click();
+  document.querySelector<HTMLButtonElement>('.workspace-ribbon [aria-label="插件管理"]')!.click();
+  await wait(() => document.querySelector<HTMLElement>('[role="dialog"][aria-label="插件管理"]')!);
+  check(document.querySelector<HTMLElement>('[role="dialog"]')!.contains(document.activeElement), 'native ribbon plugin dialog receives focus with collapsed settings');
+  document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',bubbles:true,cancelable:true}));
+  await wait(() => !document.querySelector<HTMLElement>('[role="dialog"]'));
+  check(true, 'native Escape closes the ribbon dialog without changing the document');
   pointText("粗体", 1);
   await openPlugins();
   await wait(() => pluginCard('Native-plugin-fixture'));

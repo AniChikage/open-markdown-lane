@@ -406,9 +406,10 @@ app
         title: "Open Markdown Lane",
         ...(process.platform === "darwin" ? {
           titleBarStyle: "hiddenInset", trafficLightPosition: { x: 12, y: 9 },
+          vibrancy: "sidebar", visualEffectState: "followWindow",
         } : {}),
         ...(process.platform === "linux" ? { icon: path.join(root, "icon.png") } : {}),
-        backgroundColor: "#FFFFFF",
+        backgroundColor: process.platform === "darwin" ? "#00000000" : "#eceef3",
         webPreferences: {
           backgroundThrottling: process.env.OPEN_MARKDOWN_LANE_TEST_HIDDEN !== "1",
           preload: path.join(runtimeRoot, "electron/preload.cjs"),

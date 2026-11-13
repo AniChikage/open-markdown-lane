@@ -75,6 +75,20 @@ struct CommandGroup: Decodable { let title: String; let items: [EditorCommand] }
 // WKWebView does not implement Electron's -webkit-app-region. Handle the
 // reserved 28-point toolbar row before WebKit consumes the mouse-down event.
 class EditorWindow: NSWindow {
+  func setEditorWebView(_ webView: WKWebView) {
+    // CSS paints the writing surface opaquely; AppKit blurs the desktop
+    // behind the translucent workspace chrome and honors system accessibility.
+    webView.setValue(false, forKey: "drawsBackground")
+    let material = NSVisualEffectView(frame: webView.frame)
+    material.material = .sidebar
+    material.blendingMode = .behindWindow
+    material.state = .followsWindowActiveState
+    webView.autoresizingMask = [.width, .height]
+    material.addSubview(webView)
+    isOpaque = false
+    backgroundColor = .clear
+    contentView = material
+  }
   func startsTitleBarDrag(_ event: NSEvent) -> Bool {
     guard event.type == .leftMouseDown, event.window === self,
       attachedSheet == nil, let content = contentView else { return false }
@@ -111,7 +125,7 @@ final class NativeWindowHost: NSObject, NSWindowDelegate, WKScriptMessageHandler
     super.init()
     self.store = DocumentStore(directory, historyDirectory: owner.directory)
   }
-  var window: NSWindow!
+  var window: EditorWindow!
   var webView: WKWebView!
   var store: DocumentStore!
   var pdfExporter: PDFExporter?
@@ -158,7 +172,7 @@ final class NativeWindowHost: NSObject, NSWindowDelegate, WKScriptMessageHandler
     window.isMovableByWindowBackground = false
     window.isReleasedWhenClosed = false
     window.minSize = NSSize(width: 660, height: 500)
-    window.contentView = webView
+    window.setEditorWebView(webView)
     window.delegate = self
     titleObservation = webView.observe(\.title, options: [.new]) { [weak self] view, _ in
       self?.window.title = view.title ?? "Open Markdown Lane"

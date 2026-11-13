@@ -23,6 +23,11 @@ try{
  await launch();await expect(tab('Long.md')).toHaveAttribute('aria-selected','true');await expect(page.getByRole('tab')).toHaveCount(3);await expect(page.locator('.document-editor')).toHaveCount(1);
 
  const actionBounds=await page.locator('.quick-actions').boundingBox();assert.ok(actionBounds&&actionBounds.y>=28,'interactive controls stay outside the native window-drag strip');
+ await page.getByRole('button',{name:'插件管理',exact:true}).click();const plugins=page.getByRole('dialog',{name:'插件管理',exact:true});await expect(plugins).toBeVisible();
+ assert.equal(await plugins.evaluate(root=>root.contains(document.activeElement)),true,'plugin dialog takes keyboard focus, including when its settings are collapsed');
+ await page.keyboard.press('Escape');await expect(plugins).toHaveCount(0);
+ await page.getByRole('button',{name:'偏好设置',exact:true}).click();await expect(page.getByRole('dialog',{name:'偏好设置',exact:true})).toBeVisible();await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
+ checks.push('Ribbon dialogs take keyboard focus; Escape closes plugins and preferences without changing the document.');
  await page.getByRole('group',{name:'侧栏视图',exact:true}).getByRole('button',{name:'文件树',exact:true}).click();await expect(page.getByRole('tree',{name:'文件树',exact:true})).toBeVisible();
  await page.getByRole('group',{name:'侧栏视图',exact:true}).getByRole('button',{name:'文件',exact:true}).click();
  await pane(records[0].id).locator('.rich-document').evaluate(element=>element.dataset.uiIdentity='retained');

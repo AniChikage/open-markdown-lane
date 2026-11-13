@@ -16,7 +16,7 @@ import { AISettingsDialog } from "./components/AISettingsDialog";
 import { AIReviewPanel } from "./components/AIReviewPanel";
 import type { RewriteSelection } from "./editor/aiReview";
 import "./ai.css";
-import { FilePlus2, FolderOpen, X, AlertCircle, ListTree, Sparkles, History, PanelRightClose } from "lucide-react";
+import { FilePlus2, FolderOpen, X, AlertCircle, ListTree, Sparkles, History, PanelRightClose, Search, BookOpen, Settings2, Puzzle } from "lucide-react";
 import { useDocuments } from "./useDocuments";
 import { EncodingDialog, encodingNames } from "./components/EncodingDialog";
 import { Toolbar } from "./components/Toolbar";
@@ -108,7 +108,7 @@ export default function App() {
   function setRendered(value: boolean | ((previous: boolean) => boolean)) { setModes(previous => ({...previous,[activeViewId]: typeof value === "function" ? value(previous[activeViewId] ?? rendered) : value})); }
   const [sidebar, setSidebar] = useState(() => window.innerWidth > 760),
     [focus, setFocus] = useState(false);
-  const [tab, setTab] = useState<"files" | "outline" | "tree">("files"),
+  const [tab, setTab] = useState<"files" | "outline" | "tree">("tree"),
     [theme, setTheme] = useState(
       () => storedItem(localStorage, "open-markdown-lane-theme") || "light",
     );
@@ -534,6 +534,15 @@ export default function App() {
         disabled={!active}
         context={editor()?.context() || ""}
       />
+      <nav className="workspace-ribbon" aria-label={t("工作区导航")}>
+        <img className="ribbon-mark" src={appIcon} alt="Open Markdown Lane" draggable={false} />
+        <button className="icon-button" aria-label={t("浏览文件树")} title={t("文件树")} aria-pressed={sidebar && tab === "tree"} onClick={() => { setTab("tree"); setSidebar(true); }}><ListTree size={18} /></button>
+        <button className="icon-button" aria-label={t("搜索工作区")} title={t("搜索文件夹")} onClick={() => commands.current({ action: "global-search" })}><Search size={18} /></button>
+        <button className="icon-button" aria-label={t("目录问答")} title={t("目录问答")} onClick={() => commands.current({ action: "knowledge" })}><BookOpen size={18} /></button>
+        <div className="ribbon-spacer" />
+        <button className="icon-button" aria-label={t("插件管理")} title={t("插件管理")} onClick={() => commands.current({ action: "plugins" })}><Puzzle size={18} /></button>
+        <button className="icon-button" aria-label={t("偏好设置")} title={t("偏好设置")} onClick={() => commands.current({ action: "preferences" })}><Settings2 size={18} /></button>
+      </nav>
       <Sidebar
         operation={operation => { if (operation.action === "trash" || operation.action === "undo" || operation.target) void session.fileOperation(operation).catch(e => session.setMessage(e.message)); else setFileOperation(operation); }}
         search={() => setDialog("global-search")} recent={() => setDialog("recent")} notify={session.setMessage}

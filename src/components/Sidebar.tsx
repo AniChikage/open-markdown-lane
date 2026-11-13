@@ -82,7 +82,8 @@ export function Sidebar(props: Props) {
           aria-haspopup="menu"
           onClick={() => setSwitcher(!switcher)}
         >
-          {props.tab === "files" ? t("文件") : props.tab === "tree" ? t("文件树") : t("大纲")}
+          <FolderOpen size={16} aria-hidden="true" />
+          <span title={props.folder || "Open Markdown Lane"}>{props.folder?.split("/").at(-1) || "Open Markdown Lane"}</span>
           <ChevronDown size={12} />
         </button>
         {switcher && (
@@ -112,7 +113,7 @@ export function Sidebar(props: Props) {
           <>
             <div className="sidebar-section-label">
               <span>
-                {props.folder ? props.folder.split("/").at(-1) : t("打开的文档")}
+                {props.folder ? t(props.tab === "tree" ? "文件树" : "文件") : t("打开的文档")}
               </span>
               <div>
                 <button

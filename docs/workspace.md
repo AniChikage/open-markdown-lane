@@ -4,6 +4,12 @@ English · [简体中文](workspace.zh-CN.md)
 
 These desktop features use ordinary local Markdown files. AI remains optional: configure your own compatible API or local model in **Edit → Model settings…**. No model or cloud subscription is bundled. See the [AI guide](ai.md) for service and credential settings.
 
+## Workspace layout
+
+The left ribbon gives direct access to the file tree, folder search, folder Q&A, plugins and preferences. The file sidebar opens in tree view; use its view switcher for open files or the document outline. The right dock holds the outline and AI review. Tabs, split panes and document typography keep their existing behavior and settings.
+
+Sidebar surfaces use a restrained frosted treatment. The native macOS app uses AppKit sidebar material with behind-window blur; the Electron macOS host uses system vibrancy. Windows and Linux use translucent CSS surfaces over an opaque window background, not desktop blur. Reduced-transparency and forced-color preferences remove CSS blur where the renderer supports those media queries. Custom document themes, fonts and background images remain independent of the workspace layout.
+
 ## Two views of one document and background tabs
 
 Use **View → Split this document**, the tab context menu or the tab-bar button. The second view starts in source mode; each pane can switch modes independently. Both share one Markdown buffer, dirty state, saved file and undo history, with separate selections and scroll positions. F6 switches panes. Columns/rows, pane swapping and closing either pane are supported. Scrolling remains independent; there is no synchronized-scroll toggle.
