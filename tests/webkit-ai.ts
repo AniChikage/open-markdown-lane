@@ -21,6 +21,12 @@ async function runWebKitAITests(endpoint:string) {
     const settings=document.querySelector<HTMLElement>('[role="dialog"][aria-label="模型设置"]')!;await wait(()=>!settings.querySelector<HTMLInputElement>('[aria-label="模型名称"]')!.disabled);
     field(settings,'模型服务地址',endpoint);field(settings,'模型名称','owned-native-fixture');field(settings,'模型 API 密钥','owned-fixture-only');const remember=settings.querySelector<HTMLInputElement>('[aria-label="记住模型密钥"]')!;check(remember.checked&&!remember.disabled&&settings.textContent!.includes("保存密钥到本机配置文件"),"native settings expose local-file persistence and plaintext disclosure");click(settings,'保存并测试连接');await wait(()=>!!settings.querySelector('[role="status"]')?.textContent?.includes('实际回复'));check(settings.querySelector<HTMLInputElement>('[aria-label="模型 API 密钥"]')!.value==='','native file credential never returns the API key to the form');const storedSettings=await desktop.aiSettings();check(storedSettings.ok&&storedSettings.value?.keyStorage==='file'&&!JSON.stringify(storedSettings).includes('owned-fixture-only'),'native WebKit receives file-storage metadata without the saved key');settings.querySelector<HTMLButtonElement>('[aria-label="关闭模型设置"]')!.click();await wait(()=>!document.querySelector('[role="dialog"]'));
     for(const [before,after] of [['普通','自然'],['粗体','加粗'],['A','甲']]){
+      // Undo updates the editor immediately; recovery intentionally has a 500 ms
+      // debounce. Establish the previous transaction's persisted baseline before
+      // generating again, then keep the post-generation no-write assertion exact.
+      const deadline=Date.now()+10000;let baseline=false;
+      while(Date.now()<deadline){const state=await desktop.testRecovery();if(state.ok&&state.value.documents[0].content===original){baseline=true;break;}await new Promise(resolve=>setTimeout(resolve,30));}
+      check(baseline,'native previous undo reaches exact recovery before the next generation');
       await begin(before);await wait(()=>!!panel()?.querySelector('.ai-change'));
       if(before==='普通') {
         const retained=panel(), prompt=panel().querySelector<HTMLTextAreaElement>('[aria-label="AI 改写要求"]')!, instruction=prompt.value;
