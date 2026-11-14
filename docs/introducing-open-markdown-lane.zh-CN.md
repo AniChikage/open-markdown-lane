@@ -16,7 +16,7 @@
 
 所以这次也补了一段实际编辑演示。下面展示的是安装版 macOS 应用中的操作，用公开的示例文件走了一遍正文修改、任务勾选、表格加行、源码切换、保存和 PDF 导出。
 
-![Open Markdown Lane 实际编辑操作动图](images/editing-demo.gif)
+![Open Markdown Lane 同文档双视图](images/shared-views.png)
 
 动图由实际窗口截图按步骤整理，播放时长不代表操作耗时。文中的英文来自示例文档，应用菜单和提示目前仍为中文。
 

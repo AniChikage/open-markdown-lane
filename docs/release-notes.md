@@ -1,18 +1,16 @@
-Open Markdown Lane 0.25.0 adds shared document views and bounded background editors.
+Open Markdown Lane 0.26.0 brings a more cohesive writing workspace, with a navigation ribbon, file tree and frosted sidebars.
 
 This is an independent, unofficial project, unaffiliated with Typora. If you can afford it, please [buy Typora](https://store.typora.io/) and support its official developers.
 
 ## Changes
 
-- **View → Split this document** opens the same Markdown in live/source or two rendered views. Both panes share edits, save state and undo/redo; carets, modes and scroll positions remain independent. Existing two-document splits are still available.
-- Preserve legacy initial caret placement when a session has no view metadata; a new twin starts at the current document location.
-- Restore both views, their modes/positions, active pane and geometry with unsaved text after a normal restart. Close either pane without closing the document. Scrolling is independent, not synchronized.
-- Closing a shared document clears its split without rearranging unrelated tabs.
-- Release background editor DOM using a bounded warm cache and idle expiry. Keep text and session undo/redo, and protect pending image imports and batch operations from eviction. Memory use still depends on document text, history and resources.
-- Share one idle recovery snapshot for text and view changes to reduce background work on large files.
-- Mirror source updates as changed spans instead of replacing the entire CodeMirror document for each edit. Guard pane switches, layout changes and commands during composition.
-- Fixed a macOS recovery race: an earlier session snapshot could retire a newly registered document before the editor adopted it. Recovery now distinguishes acknowledged tabs from newly opened files, with explicit close hints for tabs closed before their first snapshot.
-- Existing documents, model configuration, themes and preferences remain in their current storage locations. Step-by-step undo survives view eviction, not application restart; use version history across sessions.
+- A narrow left ribbon gives direct access to files, folder search, folder Q&A, plugins and preferences. The sidebar opens in file-tree view, with file-list and outline views still available.
+- Compact tabs connect to the writing surface; the right dock keeps outline and AI review together. Light and dark palettes, spacing and heading sizes are coordinated across the workspace.
+- Native macOS sidebar material blurs the content behind the window while keeping the document opaque. Windows and Linux use translucent surfaces over an opaque window background. Reduced-transparency and forced-color CSS fallbacks are included where supported.
+- Fixed plugin-dialog keyboard focus: collapsed settings could contain a textarea that reported layout geometry but refused focus. Dialogs now fall back to a visible control, and Escape closes them reliably.
+- Fixed English sidebar labels wrapping and file-tree selection backgrounds ending before the edge of the row.
+- Document themes, fonts, background images, model configuration, tab order and shared-view state keep their existing storage and behavior. Documents and settings are retained during upgrades.
+- README product images now show the current English workspace, with light, dark and shared-view captures. The previous interface video and screenshots have been retired from the project pages.
 
 ## Downloads
 
@@ -24,6 +22,6 @@ The six installers and the control file are covered by `SHA256SUMS.txt`. macOS i
 
 ## Validation
 
-265 unit tests passed. Release gates passed for macOS native WebKit, installed Windows/Linux apps, Everything preview and real FUSE mounts on Ubuntu 22.04/24.04. The public AppImageUpdate channel and all installer checksums were verified.
+265 local unit tests passed, together with workspace, shared-view, composition, undo/redo, theme, background, context-menu, community-plugin and AI-review regressions. The native WebKit suite passed 163 editor checks and actual PDF/HTML export checks.
 
-The user checked Sogou Pinyin in the preview; final builds repeat automated composition tests. See [versioned verification](https://github.com/AniChikage/open-markdown-lane/blob/main/docs/verification.md) for the scope and remaining manual coverage.
+Publication is gated by macOS native tests, installed Windows/Linux acceptance, Everything preview and real FUSE mounts on Ubuntu 22.04/24.04. The public AppImageUpdate check runs after publication. See [the verification record](https://github.com/AniChikage/open-markdown-lane/blob/main/docs/verification.md) for the completed release gates and installed-app checks. Physical IME candidate-window acceptance was not repeated for this visual refresh; automated composition and exact undo tests were repeated.
