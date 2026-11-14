@@ -1,15 +1,24 @@
 # 0.26.0 磨砂工作区
 
-2026-11-14：完成左侧导航图标栏、默认文件树、紧凑标签页、协调的正文与右侧工具栏，统一浅色／深色工作区。macOS 原生版通过 AppKit 侧栏材质提供窗口背后的模糊；Electron macOS 使用系统 vibrancy，Windows／Linux 为不透明窗口上的半透明 CSS 表面。正文主题、背景图片与字体设置独立保留。
+2026-11-14，已发布 [v0.26.0](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.26.0)，发行源码 `d17ae92ea4843f402bc9b3807a56cd30252cac95`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/43552560528)的 macOS、Windows、Linux、Everything 预览、真实 FUSE、发布、公开 AppImage 更新和旧 Release 清理八项全部通过，代码已推送 `main`。
+
+完成左侧导航图标栏、默认文件树、紧凑标签页、协调的正文与右侧工具栏，统一浅色／深色工作区。macOS 原生版通过 AppKit 侧栏材质提供窗口背后的模糊；Electron macOS 使用系统 vibrancy，Windows／Linux 为不透明窗口上的半透明 CSS 表面。正文主题、背景图片与字体设置独立保留。
 
 - 严格类型检查、生产构建、265 项单元测试通过。原生窗口测试覆盖材质容器下的自动缩放、标题栏拖动及系统按钮区域。
 - Electron 工作区、中文组合输入、同文档双视图、主题排版、背景图片、右键菜单、六个社区插件与 AI 审阅专项通过；660、780、1024、1440 像素窗口无横向溢出，浅／深色与窄窗口均核对了实际渲染。
 - 修复插件弹窗焦点：关闭的插件设置区中的文本框可能仍报告布局矩形，原先尝试聚焦失败后会把键盘留在侧栏。现在筛除不可见控件，并在浏览器拒绝聚焦时回退到可见控件；Electron 与原生 WebKit 均新增接管焦点和 Esc 关闭的回归。
 - 原生 WebKit 完整通过 163 项编辑断言及实际 PDF／HTML 导出检查，另通过同文档双视图专项。AI 专项使用自有测试 HTTP 服务，不把它记为本轮真实外部模型验收。本轮未重复实体输入法候选窗或 Windows／Linux 桌面人工验收。
 - 第一轮 Linux 安装载荷基线检查失败，原样在本机稳定复现：文件树中的已打开文档仍走异步重新打开路径，紧随其后的模式命令作用于上一份文档，使公式可见性检查落在源码模式。现在复用已有标签的同步激活路径，保留缓冲区、模式与历史；相同基线断言修复后全部通过，未放宽公式或图表的可见性要求。首次流水线未发布、未删除旧包，后续从修复源码完整重跑发行门禁。
-- 本机安装版已替换为 0.26.0 本地构建，415 个安装文件与测试构建一致，签名检查通过。正常退出、重启后原有两个窗口、四个标签页恢复；24 份会话中的 34 条文档记录、25 个外部文档路径、84 个资料文件、20 个 WebKit 设置项和原生偏好语义指纹均保持一致，AI 配置权限仍为 0600。更新前已单独备份资料，安装替换未写入文档或重置设置。
+- Windows 实际安装、从上一公开版本升级、文件关联、恢复保留及卸载通过；独立下载的 23 份结果覆盖工作区、既有 Issue、插件、AI、组合输入、共享视图、剪贴板与复杂转换，错误列表为空。Linux DEB／AppImage 安装载荷分别完成相同回归，46 份结果无错误，包含 GIO/KDE 启动、安装升级与卸载。
+- Everything 1.4.1.1032 实际预览、原生 COM 文件／Shell Item 初始化、7,280,322 字节文件末尾、相对路径图片、调整大小／焦点／卸载及旧处理器恢复通过，源文档字节不变，WebView2 沙箱保留。
+- Ubuntu 22.04／24.04 普通用户真实 FUSE 挂载、沙箱启动、中文路径编辑／精确保存／撤销和退出卸载通过。公开 AppImageUpdate 从 0.25.0 的内嵌稳定通道得到与公开 SHA-256 完全一致的 0.26.0，验证后删除测试旧文件，再检查无更新；没有通道覆盖参数。Ubuntu 24.04 使用应用级 AppArmor 规则，系统限制仍开启。此记录不代表新验收了完整 Ubuntu/Kubuntu 26.04 桌面。
+- 六个公开安装包及 zsync 全部重新下载，字节数、GitHub 资源摘要和 `SHA256SUMS.txt` 一致。Mac DMG 只读挂载后的 415 个文件／链接与公开 ZIP 的应用一致，签名校验通过；本机安装的也是这份原始 CI 签名应用，未重新签名。
+- 正式安装路径实测正文输入“你好，中国”同步到源码，从另一侧撤销／重做并保存，整份 Markdown 精确匹配预期。正常退出、重启后，同文档双视图、正文／源码模式、活动源码窗格和内容恢复；关闭测试标签回到原有单标签和单窗格。本次中文文字通过工具粘贴，用于核对同步与保存，不记为实体候选窗验收。
+- 正式替换前重新备份当时的实际状态：25 份会话、35 条文档记录、25 个外部文档路径、85 个资料文件和 20 个 WebKit 设置项。原有窗口和未命名草稿恢复；移除自有测试最近记录、恢复测试造成的目录与文件选择器状态后，原文、文档顺序／活动标签／布局、外部文件、资料文件、编辑偏好、原生偏好及模型配置指纹均与替换前一致，启动后再次比对通过，AI 配置权限仍为 `0600`。没有用较早预览验收的窗口数量覆盖用户在此期间的实际状态。
+- 经用户确认，在验证公开新包与更新通道后删除了 0.23.0、0.24.1、0.24.2、0.24.4、0.24.5、0.24.6、0.25.0 七个旧 GitHub Release 及附件；源标签和提交历史保留。旧本机安装归档与中间候选应用已移除，隔离性能副本同步到 0.26.0；没有据此声称重新测量跨编辑器性能。
+- README 中英文下载入口、介绍和产品图同步更新。浅色／深色／同文档双视图为自有英文夹具的实际 2 倍像素截图（2880 × 1960），展示图为 1800 × 1400；没有重绘应用控件或使用用户文档。
 
-0.26.0 正式发行准备中：使用现有三平台门禁重新构建并验收，通过后统一发布。以下 0.25.0 为历史记录，本轮发行结果在门禁结束后补充。
+以下为各旧版本发布当时的历史记录；已清理 Release 的链接指向保留的源码标签。
 
 ---
 
@@ -17,7 +26,7 @@
 
 本轮新增同一份 Markdown 的两侧视图：共享文档模型、保存状态与撤销历史，独立保存模式、光标、滚动、活动窗格和分屏几何。后台编辑 DOM 使用数量、大小与闲置预算回收；正文与历史仍保留在本机内存，重建视图不丢弃撤销记录。
 
-2026-11-13，已发布 [v0.25.0](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.25.0)，发行源码 `349240b526e8478ebe2783547d7b6d2fe3720363`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/43391309604)的 macOS、Windows、Linux、Everything 预览、真实 FUSE、发布与公开 AppImage 更新七项全部通过，代码已推送 `main`。
+2026-11-13，已发布 [v0.25.0](https://github.com/AniChikage/open-markdown-lane/tree/v0.25.0)，发行源码 `349240b526e8478ebe2783547d7b6d2fe3720363`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/43391309604)的 macOS、Windows、Linux、Everything 预览、真实 FUSE、发布与公开 AppImage 更新七项全部通过，代码已推送 `main`。
 
 - 本地严格类型检查、构建及 **265 项单测通过**。新增模型测试覆盖冷视图恢复、中文／emoji、单次组合提交、对侧书签映射、差量通知、回收预算、旧布局与单文档分屏恢复；存储测试覆盖两个视图状态与未保存文字。
 - Electron 双视图专项通过 12 标签回收、后台延迟图片导入、正文／粗体／列表／表格／代码／源码中文组合输入、对侧单次撤销／重做、5+ MiB 代码双视图及真实进程重启；自动保存关闭时，恢复草稿保留且磁盘原文不变。交换与关闭首个窗格保留另一侧。共享窗格有未完成图片导入时暂缓关闭，完成后仍可从对侧精确撤销。
@@ -43,7 +52,7 @@
 
 # 0.24.6 字体与百分比正文宽度（#18）
 
-已发布 [v0.24.6](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.6)，发行源码为 `e7e9ca3877c63aa1f3152396136bbb979aba50d4`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42471943237)重跑网络失败任务后，macOS、Windows、Linux、Windows 预览、真实 FUSE、发布和公开更新验证七项全部通过。
+已发布 [v0.24.6](https://github.com/AniChikage/open-markdown-lane/tree/v0.24.6)，发行源码为 `e7e9ca3877c63aa1f3152396136bbb979aba50d4`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42471943237)重跑网络失败任务后，macOS、Windows、Linux、Windows 预览、真实 FUSE、发布和公开更新验证七项全部通过。
 
 - 偏好设置新增直接可见的“字体与正文布局”，分别设置正文／代码字体，提供建议列表并允许输入本机已安装字体；缺失字体使用系统后备字体。宽度可选 px 或 %，百分比按各编辑窗格计算，覆盖即时渲染和源码模式。每套主题独立保存，旧像素值不改义，切换单位保留两种值。
 - 修正宽度数字框的逐字输入：清空或暂时低于最小值时允许继续输入，不立即覆盖用户正在键入的数字；无效值离开输入框时回退。实际键盘逐字输入、范围校验和切换单位已回归。
@@ -59,7 +68,7 @@
 
 # 0.24.5 AppImage 文件名与标准更新通道
 
-已发布 [v0.24.5](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.5)，发行源码为 `565968982f75e92c8fbee1c3d4d0a24fd86d1d59`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42446559737)的 macOS、Windows、Linux、Windows 预览、真实 FUSE、发布及公开更新验证七项任务全部通过。
+已发布 [v0.24.5](https://github.com/AniChikage/open-markdown-lane/tree/v0.24.5)，发行源码为 `565968982f75e92c8fbee1c3d4d0a24fd86d1d59`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42446559737)的 macOS、Windows、Linux、Windows 预览、真实 FUSE、发布及公开更新验证七项任务全部通过。
 
 - AppImage 使用 `Open-Markdown-Lane-0.24.5-x86_64.AppImage`，内嵌标准 `gh-releases-zsync` 稳定版通道；同步发布 `.AppImage.zsync`，纳入 SHA-256 汇总。DEB 保留原安装命名。更新通过外部 AppImageUpdate 工具执行，应用没有新增后台静默更新器；0.24.4 及更早文件需要先手动更新一次。
 - 本地类型检查、构建和 253 项单测通过。实际旧 AppImage 的 ELF 保留区写入验证确认其他字节及 SquashFS 偏移不变；打包时再调用真实运行时核对偏移与更新信息。
@@ -74,7 +83,7 @@
 
 # 0.24.4 系统语言与首次欢迎文档
 
-已发布 [v0.24.4](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.4)，发行源码为 `05c40ac1f0d3ab75832534f9c714f31ca6c34515`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42336680574)的 macOS、Windows、Linux、Windows 预览、真实 FUSE 和发布六项任务全部通过。
+已发布 [v0.24.4](https://github.com/AniChikage/open-markdown-lane/tree/v0.24.4)，发行源码为 `05c40ac1f0d3ab75832534f9c714f31ca6c34515`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42336680574)的 macOS、Windows、Linux、Windows 预览、真实 FUSE 和发布六项任务全部通过。
 
 - 首次渲染前读取宿主系统语言，再解析已保存的选择。Linux 优先级为 `LC_ALL` → `LC_MESSAGES` → `LANG`；中文环境使用简体中文，其他语言和 C/POSIX 回退英文。macOS 原生宿主使用系统首选语言。
 - 新用户默认为“跟随系统语言”；手动选择中英文后保持选择。旧品牌存储键与既有语言设置继续优先，不重置其他偏好。恢复已有会话先于示例生成，切换界面语言不翻译、改名或覆盖文档。
@@ -93,7 +102,7 @@
 
 # 0.24.2 空行与缺失文件批量打开回归
 
-针对 [#16](https://github.com/AniChikage/open-markdown-lane/issues/16) 和 [#17](https://github.com/AniChikage/open-markdown-lane/issues/17)，已发布 [v0.24.2](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.2)，发行源码为 `f0e5774001cb65fc669b8511a29aa70bc972b61d`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42317677639)的 macOS、Windows、Linux、Windows 预览、真实 FUSE 和发布六项任务通过。本轮使用隔离会话和自建文档，没有操作用户原有文档、设置或插件配置。
+针对 [#16](https://github.com/AniChikage/open-markdown-lane/issues/16) 和 [#17](https://github.com/AniChikage/open-markdown-lane/issues/17)，已发布 [v0.24.2](https://github.com/AniChikage/open-markdown-lane/tree/v0.24.2)，发行源码为 `f0e5774001cb65fc669b8511a29aa70bc972b61d`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/42317677639)的 macOS、Windows、Linux、Windows 预览、真实 FUSE 和发布六项任务通过。本轮使用隔离会话和自建文档，没有操作用户原有文档、设置或插件配置。
 
 - #16：修复前，连续第二次回车后的可编辑段落数量仍为 2（应为 3），额外源码空行也未显示。修复保留额外空段落节点及稳定身份，普通 Markdown 段间分隔不额外展开；LF／CRLF 原文不重写，包含大块增量编辑检查。
 - #17：在不安装 OT1 的原版 Electron 宿主里，以 35 个缺失路径和一个可读文件复现了 35 次原生错误框调用。修复后批量请求按队列执行，失败合并为非模态提示，可读文件继续打开；35 份未保存内容及恢复记录保持原样，不静默删除已有标签或缓存正文。OT1 的具体启动脚本和插件组合未单独验收。
@@ -111,7 +120,7 @@
 
 0.24.0 候选未发布；补充检查发现收起侧栏后焦点留在隐藏按钮，0.24.1 修复并增加 Chromium／WebKit 焦点断言。
 
-本轮调整标签、文件导航、右侧工具区和正文标题排版，不更换编辑内核或存储格式。正式版本为 [v0.24.1](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.24.1)。
+本轮调整标签、文件导航、右侧工具区和正文标题排版，不更换编辑内核或存储格式。正式版本为 [v0.24.1](https://github.com/AniChikage/open-markdown-lane/tree/v0.24.1)。
 
 - 本地单元检查：241 项通过。
 - Electron 工作区：直接切换文件／树／大纲、右侧大纲和历史入口、明暗主题及窄窗口；切换后编辑器实例与文件内容保留。原有多标签、独立撤销、分屏编辑、比例调整、顺序与重启恢复通过。
@@ -137,7 +146,7 @@
 
 # 0.23.0 更名与本机升级验收
 
-正式版本 [v0.23.0](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.23.0)，对应发布提交 `c46f367082ef7508c4520762d0bb29bb22629140`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/41780403808) 的 macOS、Windows、Linux、Everything 预览、Ubuntu 24.04 真实 FUSE 和发布任务全部通过。
+正式版本 [v0.23.0](https://github.com/AniChikage/open-markdown-lane/tree/v0.23.0)，对应发布提交 `c46f367082ef7508c4520762d0bb29bb22629140`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/41780403808) 的 macOS、Windows、Linux、Everything 预览、Ubuntu 24.04 真实 FUSE 和发布任务全部通过。
 
 2026-11-04，产品、仓库、安装包、菜单、导出与网页试玩统一为 **Open Markdown Lane**。三平台安装包采用 `Open-Markdown-Lane-0.23.0-*`；[网页试玩](https://open-markdown-lane.comicyueyu.chatgpt.site) 已迁移到新网址。内部数据目录、WebKit origin、应用 ID 和 Linux 密钥加密命名空间为升级兼容保留。
 
