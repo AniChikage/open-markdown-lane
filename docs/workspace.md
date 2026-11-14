@@ -8,7 +8,7 @@ These desktop features use ordinary local Markdown files. AI remains optional: c
 
 The left ribbon gives direct access to the file tree, folder search, folder Q&A, plugins and preferences. The file sidebar opens in tree view; use its view switcher for open files or the document outline. The right dock holds the outline and AI review. Tabs, split panes and document typography keep their existing behavior and settings.
 
-Sidebar surfaces use a restrained frosted treatment. The native macOS app uses AppKit sidebar material with behind-window blur; the Electron macOS host uses system vibrancy. Windows and Linux use translucent CSS surfaces over an opaque window background, not desktop blur. Reduced-transparency and forced-color preferences remove CSS blur where the renderer supports those media queries. Custom document themes, fonts and background images remain independent of the workspace layout.
+Sidebar surfaces use a restrained frosted treatment. The native macOS app uses AppKit behind-window material with a light translucent tint, synchronized to the document theme; the Electron macOS host uses system vibrancy. Windows and Linux use translucent CSS surfaces over an opaque window background, not desktop blur. Reduced-transparency and forced-color preferences remove CSS blur where the renderer supports those media queries. Custom document themes, fonts and background images remain independent of the workspace layout.
 
 ## Two views of one document and background tabs
 

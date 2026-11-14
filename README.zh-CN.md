@@ -16,17 +16,17 @@
 >
 > **有能力的朋友，请优先[购买正版 Typora](https://store.typora.io/)，支持官方开发者。** 官方产品与支持请认准 **[typora.io](https://typora.io/)**。
 
-![Open Markdown Lane 0.26.0 英文工作区](docs/images/hero.png)
+![Open Markdown Lane 0.26.1 英文工作区](docs/images/hero.png)
 
 [浅色工作区](docs/images/workspace-light.png) · [深色工作区](docs/images/workspace-dark.png) · [同文档双视图](docs/images/shared-views.png)
 
 Open Markdown Lane 是一款开源 Markdown 编辑器，受 Typora 的行内编辑体验启发。直接修改排版后的正文，需要时切换源码，文档以普通 `.md` 文件保存在自己的文件夹中。
 
-**项目状态：**当前为早期开发版本 **0.26.0**，发布目标为 **macOS 14+、Apple Silicon**、**Windows 10/11 x64** 和 **Linux x64**，首次启动跟随系统语言：中文环境使用简体中文，其他环境回退英文，欢迎页与示例笔记同步适配。新用户默认“跟随系统语言”，在偏好设置中手动选择的语言优先保留，已有文档和设置不会重置。Linux 按 `LC_ALL`、`LC_MESSAGES`、`LANG` 的优先级识别初始语言。本项目独立实现，与 Typora 无隶属关系；功能和交互仍在持续完善。
+**项目状态：**当前为早期开发版本 **0.26.1**，发布目标为 **macOS 14+、Apple Silicon**、**Windows 10/11 x64** 和 **Linux x64**，首次启动跟随系统语言：中文环境使用简体中文，其他环境回退英文，欢迎页与示例笔记同步适配。新用户默认“跟随系统语言”，在偏好设置中手动选择的语言优先保留，已有文档和设置不会重置。Linux 按 `LC_ALL`、`LC_MESSAGES`、`LANG` 的优先级识别初始语言。本项目独立实现，与 Typora 无隶属关系；功能和交互仍在持续完善。
 
 **新版工作区：** 更清晰的文档标签、直接切换文件／文件树／大纲，以及可收起的右侧工具栏。切换工具会保留 AI 改写要求和差异审阅。
 
-**0.26.0 发布验收：** macOS、Windows、Linux 安装回归、Everything 预览、真实 FUSE 挂载与公开 AppImage 更新检查已通过。[查看验收范围](docs/verification.md)。
+**0.26.1 发布验收：** 本机编辑回归已通过，三平台正式发布检查待完成。[查看验收范围](docs/verification.md)。
 
 ## 功能
 
@@ -71,20 +71,20 @@ Open Markdown Lane 是一款开源 Markdown 编辑器，受 Typora 的行内编�
 
 | 平台 | 安装包 | 其他方式 |
 | --- | --- | --- |
-| Windows 10/11 · x64 | **[下载 Setup.exe](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-windows-x64-Setup.exe)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-windows-x64.zip) |
-| macOS 14+ · Apple Silicon | **[下载 DMG](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-arm64.dmg)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-arm64.zip) |
-| Linux · x64 | **[下载 DEB](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-linux-x64.deb)** | [AppImage](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-x86_64.AppImage) |
+| Windows 10/11 · x64 | **[下载 Setup.exe](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-windows-x64-Setup.exe)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-windows-x64.zip) |
+| macOS 14+ · Apple Silicon | **[下载 DMG](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-arm64.dmg)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-arm64.zip) |
+| Linux · x64 | **[下载 DEB](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-linux-x64.deb)** | [AppImage](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-x86_64.AppImage) |
 
-[SHA-256 校验文件](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/SHA256SUMS.txt) · [所有版本](https://github.com/AniChikage/open-markdown-lane/releases)
+[SHA-256 校验文件](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/SHA256SUMS.txt) · [所有版本](https://github.com/AniChikage/open-markdown-lane/releases)
 
-AppImage 文件名改为 `Open-Markdown-Lane-版本-x86_64.AppImage`。从 0.24.5 起，包内包含标准稳定版更新信息，并发布配套 [`.zsync` 控制文件](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-x86_64.AppImage.zsync)，可通过 AppImageUpdate 差量更新。[更新说明](docs/linux-appimage.md#updates-with-appimageupdate)。
+AppImage 文件名改为 `Open-Markdown-Lane-版本-x86_64.AppImage`。从 0.24.5 起，包内包含标准稳定版更新信息，并发布配套 [`.zsync` 控制文件](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-x86_64.AppImage.zsync)，可通过 AppImageUpdate 差量更新。[更新说明](docs/linux-appimage.md#updates-with-appimageupdate)。
 
 ### 安装 Linux 版
 
 以 Ubuntu 22.04 x64 为验收基线，下载 DEB 后运行：
 
 ```sh
-sudo apt install ./Open-Markdown-Lane-0.26.0-linux-x64.deb
+sudo apt install ./Open-Markdown-Lane-0.26.1-linux-x64.deb
 ```
 
 安装后可从桌面启动器打开，并关联 Markdown 文件。`sudo apt remove open-markdown-lane` 卸载保留文档和恢复数据。
@@ -103,7 +103,7 @@ Windows 版目前**没有代码签名证书**，系统可能显示未知发布�
 
 ### 安装 macOS 版
 
-1. 从 [Releases](https://github.com/AniChikage/open-markdown-lane/releases/latest) 下载 **[Open-Markdown-Lane-0.26.0-arm64.dmg](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-arm64.dmg)**。
+1. 从 [Releases](https://github.com/AniChikage/open-markdown-lane/releases/latest) 下载 **[Open-Markdown-Lane-0.26.1-arm64.dmg](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-arm64.dmg)**。
 2. 打开 DMG，把 **Open Markdown Lane** 拖入 **Applications（应用程序）**。
 3. 从应用程序中启动 Open Markdown Lane。
 

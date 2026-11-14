@@ -404,7 +404,7 @@ jobs:
           retention-days: 7
 
   retire-superseded:
-    if: inputs.tag == 'v0.26.0' && inputs.create_tag
+    if: inputs.tag == 'v0.26.1' && inputs.create_tag
     needs: appimage-public-update
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -423,7 +423,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RETIRE_EXACT_RELEASES: v0.26.0
+          RETIRE_EXACT_RELEASES: v0.26.1
           OPEN_MARKDOWN_LANE_QA_DIR: ${{ runner.temp }}/open-markdown-lane-release-retirement
       - name: Save replacement checksums and retired release metadata
         if: always()

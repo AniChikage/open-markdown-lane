@@ -16,15 +16,15 @@
 >
 > If you can afford it, please **[buy Typora](https://store.typora.io/)** and support its official developers. Visit **[typora.io](https://typora.io/)** for the official product and support.
 
-![Open Markdown Lane 0.26.0 workspace](docs/images/hero.png)
+![Open Markdown Lane 0.26.1 workspace](docs/images/hero.png)
 
 [Light workspace](docs/images/workspace-light.png) · [Dark workspace](docs/images/workspace-dark.png) · [Shared document views](docs/images/shared-views.png)
 
 Open Markdown Lane is an open-source Markdown editor inspired by Typora's inline editing experience. Write directly in the rendered document, switch to source when you need it, and save ordinary `.md` files in your own folders.
 
-**Status:** early development, version **0.26.0**. Release builds support **macOS 14+ on Apple Silicon**, **Windows 10/11 x64**, and **Linux x64**. On first launch, the interface and sample notes follow the system language: Chinese locales use Simplified Chinese, and other locales use English. New profiles stay in Follow system language mode until you choose a language in Preferences → Language. A manual choice always takes precedence; existing notes and saved settings are preserved. On Linux, `LC_ALL`, `LC_MESSAGES`, then `LANG` determine the initial language. This is an independent project, unaffiliated with Typora; full feature and behavior parity is still in progress.
+**Status:** early development, version **0.26.1**. Release builds support **macOS 14+ on Apple Silicon**, **Windows 10/11 x64**, and **Linux x64**. On first launch, the interface and sample notes follow the system language: Chinese locales use Simplified Chinese, and other locales use English. New profiles stay in Follow system language mode until you choose a language in Preferences → Language. A manual choice always takes precedence; existing notes and saved settings are preserved. On Linux, `LC_ALL`, `LC_MESSAGES`, then `LANG` determine the initial language. This is an independent project, unaffiliated with Typora; full feature and behavior parity is still in progress.
 
-**0.26.0 release checks:** macOS, Windows and Linux installation tests, Everything preview, real FUSE mounts and public AppImage updates passed. [Verification record](docs/verification.md).
+**0.26.1 release checks:** local editor regressions passed; three-platform release checks are pending. [Verification record](docs/verification.md).
 
 ## Features
 
@@ -69,20 +69,20 @@ The demo keeps documents in the current tab's memory; it does not upload or pers
 
 | Platform | Installer | Alternative |
 | --- | --- | --- |
-| Windows 10/11 · x64 | **[Download Setup.exe](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-windows-x64-Setup.exe)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-windows-x64.zip) |
-| macOS 14+ · Apple Silicon | **[Download DMG](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-arm64.dmg)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-arm64.zip) |
-| Linux · x64 | **[Download DEB](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-linux-x64.deb)** | [AppImage](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-x86_64.AppImage) |
+| Windows 10/11 · x64 | **[Download Setup.exe](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-windows-x64-Setup.exe)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-windows-x64.zip) |
+| macOS 14+ · Apple Silicon | **[Download DMG](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-arm64.dmg)** | [ZIP](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-arm64.zip) |
+| Linux · x64 | **[Download DEB](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-linux-x64.deb)** | [AppImage](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-x86_64.AppImage) |
 
-[SHA-256 checksums](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/SHA256SUMS.txt) · [All releases](https://github.com/AniChikage/open-markdown-lane/releases)
+[SHA-256 checksums](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/SHA256SUMS.txt) · [All releases](https://github.com/AniChikage/open-markdown-lane/releases)
 
-AppImage downloads use the `Open-Markdown-Lane-VERSION-x86_64.AppImage` naming convention. From 0.24.5, they include standard stable-channel update information and a [`.zsync` control file](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-x86_64.AppImage.zsync) for updates through AppImageUpdate. [Update instructions](docs/linux-appimage.md#updates-with-appimageupdate).
+AppImage downloads use the `Open-Markdown-Lane-VERSION-x86_64.AppImage` naming convention. From 0.24.5, they include standard stable-channel update information and a [`.zsync` control file](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-x86_64.AppImage.zsync) for updates through AppImageUpdate. [Update instructions](docs/linux-appimage.md#updates-with-appimageupdate).
 
 ### Install on Linux
 
 Ubuntu 22.04 or a compatible x64 distribution is the tested baseline. Download the DEB and install it with:
 
 ```sh
-sudo apt install ./Open-Markdown-Lane-0.26.0-linux-x64.deb
+sudo apt install ./Open-Markdown-Lane-0.26.1-linux-x64.deb
 ```
 
 The desktop launcher and Markdown file association are included. Uninstalling with `sudo apt remove open-markdown-lane` retains your documents and recovery data.
@@ -101,7 +101,7 @@ The Windows build is currently **not code-signed**. Windows may display an unkno
 
 ### Install on macOS
 
-1. Download **[Open-Markdown-Lane-0.26.0-arm64.dmg](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.0/Open-Markdown-Lane-0.26.0-arm64.dmg)** from [Releases](https://github.com/AniChikage/open-markdown-lane/releases/latest).
+1. Download **[Open-Markdown-Lane-0.26.1-arm64.dmg](https://github.com/AniChikage/open-markdown-lane/releases/download/v0.26.1/Open-Markdown-Lane-0.26.1-arm64.dmg)** from [Releases](https://github.com/AniChikage/open-markdown-lane/releases/latest).
 2. Open the DMG and drag **Open Markdown Lane** into **Applications**.
 3. Launch Open Markdown Lane from Applications.
 
