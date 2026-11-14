@@ -26,7 +26,7 @@ Open Markdown Lane 是一款开源 Markdown 编辑器，受 Typora 的行内编�
 
 **新版工作区：** 更清晰的文档标签、直接切换文件／文件树／大纲，以及可收起的右侧工具栏。切换工具会保留 AI 改写要求和差异审阅。
 
-**0.26.1 发布验收：** 本机编辑回归已通过，三平台正式发布检查待完成。[查看验收范围](docs/verification.md)。
+**0.26.1 发布验收：** macOS、Windows、Linux 安装回归、Everything 预览、Ubuntu 真实 FUSE 与公开 AppImageUpdate 均通过；macOS 磨砂透光已用屏幕合成截图实测。[查看验收范围](docs/verification.md)。
 
 ## 功能
 
