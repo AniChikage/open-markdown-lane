@@ -9,6 +9,7 @@ This is an independent, unofficial project, unaffiliated with Typora. If you can
 - Native macOS sidebar material blurs the content behind the window while keeping the document opaque. Windows and Linux use translucent surfaces over an opaque window background. Reduced-transparency and forced-color CSS fallbacks are included where supported.
 - Fixed plugin-dialog keyboard focus: collapsed settings could contain a textarea that reported layout geometry but refused focus. Dialogs now fall back to a visible control, and Escape closes them reliably.
 - Fixed English sidebar labels wrapping and file-tree selection backgrounds ending before the edge of the row.
+- Selecting an already-open file in the tree now activates its existing tab immediately, retaining the in-memory draft and avoiding a disk-open race with the next mode or formatting command.
 - Document themes, fonts, background images, model configuration, tab order and shared-view state keep their existing storage and behavior. Documents and settings are retained during upgrades.
 - README product images now show the current English workspace, with light, dark and shared-view captures. The previous interface video and screenshots have been retired from the project pages.
 

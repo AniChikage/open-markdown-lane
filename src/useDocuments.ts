@@ -356,6 +356,13 @@ export function useDocuments(canPrepare: () => boolean = () => true, captureView
     }
   }
   async function openToken(token: string) {
+    const file = files.find(entry => entry.token === token);
+    const existing = file && current.current.documents.find(record => record.path === file.path);
+    // Selecting an open file must use the same immediate path as its tab.
+    // Reopening it through the host races subsequent mode/format commands and
+    // needlessly reads disk while the authoritative draft is already in memory.
+    if (existing) return setActiveId(existing.id) ? existing : undefined;
+    if (!canSwitch()) return;
     try {
       const added = await add(await host.openToken(token));
       setRecent(await host.recent());
