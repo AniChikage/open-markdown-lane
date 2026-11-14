@@ -19,6 +19,7 @@ import {
   session,
   clipboard,
   safeStorage,
+  nativeTheme,
 } from "electron";
 import path from "node:path";
 import { mkdirSync } from "node:fs";
@@ -130,6 +131,12 @@ const handlers: IpcHandlers = {
   captureVersion: (_, id, content, reason) => store.versions.capture(store.require(id), content, reason),
   readVersion: (_, id, versionId) => store.versions.read(store.require(id), versionId),
   setLocale: (_, locale) => { const next = locale === 'en' ? 'en' : 'zh-CN'; if (uiLocale !== next) { uiLocale = next; buildMenu(); } return true; },
+  setAppearance: (_, appearance) => {
+    if (appearance !== 'light' && appearance !== 'dark') throw new Error('外观无效。');
+    if (process.platform !== 'darwin') return false;
+    nativeTheme.themeSource = appearance;
+    return true;
+  },
   background: () => readBackground(store.dataDir),
   clearBackground: () => clearBackground(store.dataDir),
   chooseBackground: async () => {
@@ -406,7 +413,7 @@ app
         title: "Open Markdown Lane",
         ...(process.platform === "darwin" ? {
           titleBarStyle: "hiddenInset", trafficLightPosition: { x: 12, y: 9 },
-          vibrancy: "sidebar", visualEffectState: "followWindow",
+          vibrancy: "under-window", visualEffectState: "active",
         } : {}),
         ...(process.platform === "linux" ? { icon: path.join(root, "icon.png") } : {}),
         backgroundColor: process.platform === "darwin" ? "#00000000" : "#eceef3",

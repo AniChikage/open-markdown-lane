@@ -339,6 +339,14 @@ export default function App() {
   const themeCustomization = customizations[theme] || customizationDefaults;
   useEffect(() => { try { localStorage.setItem(themeCustomizationKey, JSON.stringify(customizations)); } catch { session.setMessage(t("主题设置存储空间不足，请导出当前主题 CSS 保存。当前预览仍可使用。")); } }, [customizations]);
   useEffect(() => applyTheme(theme, themes, themeCustomization), [theme, themes, themeCustomization]);
+  useEffect(() => {
+    let current = true;
+    const appearance = (builtInThemes.find(item => item.id === theme) || builtInThemes[0]).dark ? "dark" : "light";
+    void host.setAppearance(appearance).then(material => {
+      if (current) document.documentElement.dataset.windowMaterial = material ? "macos" : "none";
+    }).catch(() => { if (current) document.documentElement.dataset.windowMaterial = "none"; });
+    return () => { current = false; };
+  }, [theme]);
   function customizeTheme(value: ThemeCustomization) { setCustomizations(previous => ({ ...previous, [theme]: normalizeCustomization(value) })); }
   function resetTheme() { setCustomizations(previous => { const next = { ...previous }; delete next[theme]; return next; }); }
   async function saveTheme() {

@@ -79,10 +79,11 @@ class EditorWindow: NSWindow {
     // CSS paints the writing surface opaquely; AppKit blurs the desktop
     // behind the translucent workspace chrome and honors system accessibility.
     webView.setValue(false, forKey: "drawsBackground")
+    webView.underPageBackgroundColor = .clear
     let material = NSVisualEffectView(frame: webView.frame)
-    material.material = .sidebar
+    material.material = .underWindowBackground
     material.blendingMode = .behindWindow
-    material.state = .followsWindowActiveState
+    material.state = .active
     webView.autoresizingMask = [.width, .height]
     material.addSubview(webView)
     isOpaque = false
@@ -482,6 +483,11 @@ final class NativeWindowHost: NSObject, NSWindowDelegate, WKScriptMessageHandler
   func handle(_ name: String, _ args: [Any]) throws -> Any? {
     switch name {
     case "systemLocale": return UILanguage.system
+    case "setAppearance":
+      let appearance = try arg(args, 0, String.self)
+      guard ["light", "dark"].contains(appearance) else { throw NativeFailure("外观无效。") }
+      window.appearance = NSAppearance(named: appearance == "dark" ? .darkAqua : .aqua)
+      return true
     case "setLocale":
       let next = try arg(args, 0, String.self) == "en" ? "en" : "zh-CN"
       if owner.uiLocale != next { owner.uiLocale = next; UILanguage.current = next; for host in owner.hosts { host.buildMenu() } }

@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("desktop", {
   captureVersion: (id, content, reason) => call('captureVersion', id, content, reason),
   readVersion: (id, versionId) => call('readVersion', id, versionId),
   setLocale: locale => call('setLocale', locale),
+  setAppearance: appearance => call('setAppearance', appearance),
   systemLocale: () => call('systemLocale'),
   readResource: address => call("readResource", address),
   background: () => call("background"), chooseBackground: () => call("chooseBackground"), clearBackground: () => call("clearBackground"),

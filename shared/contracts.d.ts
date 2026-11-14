@@ -89,6 +89,7 @@ export interface Host {
   captureVersion(id: string, content: string, reason: string): Promise<VersionResult>;
   readVersion(id: string, versionId: string): Promise<{ version: DocumentVersion; content: string }>;
   setLocale(locale: string): Promise<unknown>;
+  setAppearance(appearance: "light" | "dark"): Promise<boolean>;
   systemLocale(): Promise<string>;
   cancelClose(): Promise<unknown>;
   windowAction(action: string): Promise<unknown>;
