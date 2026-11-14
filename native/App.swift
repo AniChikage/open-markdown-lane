@@ -75,20 +75,31 @@ struct CommandGroup: Decodable { let title: String; let items: [EditorCommand] }
 // WKWebView does not implement Electron's -webkit-app-region. Handle the
 // reserved 28-point toolbar row before WebKit consumes the mouse-down event.
 class EditorWindow: NSWindow {
-  func setEditorWebView(_ webView: WKWebView) {
+  private(set) var workspaceMaterial = "macos"
+  func setEditorWebView(_ webView: WKWebView, allowsGlass: Bool = true) {
     // CSS paints the writing surface opaquely; AppKit blurs the desktop
     // behind the translucent workspace chrome and honors system accessibility.
     webView.setValue(false, forKey: "drawsBackground")
     webView.underPageBackgroundColor = .clear
-    let material = NSVisualEffectView(frame: webView.frame)
-    material.material = .underWindowBackground
-    material.blendingMode = .behindWindow
-    material.state = .active
     webView.autoresizingMask = [.width, .height]
-    material.addSubview(webView)
     isOpaque = false
     backgroundColor = .clear
-    contentView = material
+    if #available(macOS 26.0, *), allowsGlass {
+      let glass = NSGlassEffectView(frame: webView.frame)
+      glass.style = .regular
+      glass.cornerRadius = 0
+      glass.contentView = webView
+      contentView = glass
+      workspaceMaterial = "macos-glass"
+    } else {
+      let material = NSVisualEffectView(frame: webView.frame)
+      material.material = .underWindowBackground
+      material.blendingMode = .behindWindow
+      material.state = .active
+      material.addSubview(webView)
+      contentView = material
+      workspaceMaterial = "macos"
+    }
   }
   func startsTitleBarDrag(_ event: NSEvent) -> Bool {
     guard event.type == .leftMouseDown, event.window === self,
@@ -487,7 +498,7 @@ final class NativeWindowHost: NSObject, NSWindowDelegate, WKScriptMessageHandler
       let appearance = try arg(args, 0, String.self)
       guard ["light", "dark"].contains(appearance) else { throw NativeFailure("外观无效。") }
       window.appearance = NSAppearance(named: appearance == "dark" ? .darkAqua : .aqua)
-      return true
+      return window.workspaceMaterial
     case "setLocale":
       let next = try arg(args, 0, String.self) == "en" ? "en" : "zh-CN"
       if owner.uiLocale != next { owner.uiLocale = next; UILanguage.current = next; for host in owner.hosts { host.buildMenu() } }

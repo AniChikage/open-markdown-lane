@@ -110,14 +110,16 @@
 /* Let the native material supply the frost; a second near-opaque CSS layer
    hides its backdrop. Keep the opaque fallback on hosts without that material. */
 :root[data-window-material=macos] { --chrome-glass:color-mix(in srgb,var(--sidebar) 24%,transparent); }
-:root[data-window-material=macos],:root[data-window-material=macos] body { background:transparent; }
-:root[data-window-material=macos] :is(.sidebar,.workspace-ribbon) { --muted:color-mix(in srgb,var(--ink) 88%,var(--sidebar)); -webkit-backdrop-filter:none; backdrop-filter:none; }
+:root[data-window-material=macos-glass] { --chrome-glass:color-mix(in srgb,var(--sidebar) 8%,transparent); }
+:root:is([data-window-material=macos],[data-window-material=macos-glass]),:root:is([data-window-material=macos],[data-window-material=macos-glass]) body { background:transparent; }
+:root:is([data-window-material=macos],[data-window-material=macos-glass]) :is(.sidebar,.workspace-ribbon) { --muted:color-mix(in srgb,var(--ink) 88%,var(--sidebar)); -webkit-backdrop-filter:none; backdrop-filter:none; }
 @media(max-width:1100px) { .right-tools { width:264px; } .right-tool-rail { width:36px; padding-left:2px; padding-right:2px; } }
 @media(max-width:820px) { .writing-content.with-tools { flex-wrap:wrap; } .with-tools .editor-workspace { flex-basis:calc(100% - 36px); } .right-tools { order:3; width:100%; max-width:100%; min-width:0; height:40%; min-height:180px; border-left:0; border-top:1px solid var(--chrome-line); } .right-tool-rail { order:2; } .right-tools .ai-review-panel { flex-basis:auto; min-height:0; } .right-outline { padding-top:12px; } }
 @media(max-width:760px) {
   .app-shell { grid-template-columns:var(--ribbon-width) 0 minmax(0,1fr); }
   .app-shell:not(.sidebar-hidden) .sidebar { top:36px; left:var(--ribbon-width); width:min(var(--sidebar-width),calc(100vw - var(--ribbon-width) - 48px)); box-shadow:8px 0 24px #00000012; }
   .sidebar { --chrome-glass:color-mix(in srgb,var(--sidebar) 94%,transparent); }
+  :root[data-window-material=macos-glass] .sidebar { --chrome-glass:color-mix(in srgb,var(--sidebar) 8%,transparent); }
   .document-title { max-width:calc(100% - 180px); }
   .document-tab { min-width:100px; max-width:180px; }
   .workspace-bar { padding-left:6px; padding-right:6px; gap:4px; }

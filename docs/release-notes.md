@@ -1,15 +1,14 @@
-Open Markdown Lane 0.26.1 fixes the macOS frosted sidebar so the native background material can show through.
+Open Markdown Lane 0.26.2 adds native Liquid Glass on macOS 26 while keeping macOS 14/15 compatible.
 
 This is an independent, unofficial project, unaffiliated with Typora. If you can afford it, please [buy Typora](https://store.typora.io/) and support its official developers.
 
-![Native macOS frosted sidebar over an owned colored test background](https://raw.githubusercontent.com/AniChikage/open-markdown-lane/v0.26.1/docs/images/workspace-dark.png)
+![Native macOS 26 glass over an owned neutral test background](https://raw.githubusercontent.com/AniChikage/open-markdown-lane/v0.26.2/docs/images/workspace-dark.png)
 
 ## Changes
 
-- Replaced the nearly opaque macOS sidebar tint with a lighter translucent layer over native behind-window material. Removed redundant CSS blur on native material surfaces.
-- Native material follows the current light or dark document theme, including when the operating system uses a different appearance. Inactive windows retain the frosted treatment.
-- Kept opaque desktop fallbacks on Windows/Linux, the clear writing surface, and reduced-transparency and forced-color styles.
-- Existing documents, recovery, themes, model configuration and editor behavior retain their storage formats.
+- Use the standard native glass container on macOS 26 and later, with a lighter 8% sidebar tint. The writing surface stays opaque, and the glass follows the document's light or dark theme.
+- Retain the existing compatible material on macOS 14/15. The minimum macOS requirement remains 14; Windows and Linux keep opaque desktop fallbacks.
+- Preserve reduced-transparency and forced-color styles, document themes, background images and existing storage formats.
 
 ## Downloads
 
@@ -21,6 +20,6 @@ The six installers and the control file are covered by `SHA256SUMS.txt`. macOS i
 
 ## Validation
 
-Production build, strict checks and 265 unit tests passed, together with workspace, shared-view, native window/store, full native WebKit (163 editor checks) and shared-view regressions. These cover Chinese composition, exact saves, cross-pane undo/redo and real process restart. Physical IME candidate-window acceptance was not repeated.
+Local build, strict checks and 265 unit tests passed. Native window checks exercise both glass and legacy containers, resizing, title-bar dragging and system-button regions. Actual display-compositor captures use the production editor over an owned neutral patterned background, restricted to the test window's rectangle. Physical IME candidate-window acceptance has not been repeated.
 
-The macOS visual check uses an owned patterned window behind the real editor and a consented display-compositor capture restricted to that editor's rectangle. Window-only snapshots are not counted as evidence of behind-window translucency. All three-platform installation and upgrade tests passed, together with Everything preview, real Ubuntu 22.04/24.04 FUSE mounts and public AppImageUpdate from 0.26.0. The published installers were downloaded and verified against their checksums. The local macOS app is updated, with document, session, view-state and settings fingerprints preserved. The superseded 0.26.0 Release and installation copies have been removed; source tags and history remain. See [the verification record](https://github.com/AniChikage/open-markdown-lane/blob/main/docs/verification.md) for the final scope and results.
+Publication is gated by three-platform installation and editor regressions, Everything preview and real Ubuntu FUSE mounts. Public AppImageUpdate and verified old-release cleanup follow publication. See [the verification record](https://github.com/AniChikage/open-markdown-lane/blob/main/docs/verification.md) for the final scope and results.

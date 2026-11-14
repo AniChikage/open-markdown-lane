@@ -17,7 +17,7 @@ Remove personal information and credentials from examples. For a behavior compar
 
 ## Set up development
 
-Use Node.js 26 and npm. The macOS host needs macOS 14+ and Xcode Command Line Tools. Windows packaging needs Windows x64, Visual Studio 2022 Build Tools with Desktop development with C++, and PowerShell 7 (`pwsh`); Linux packaging uses Ubuntu 22.04 x64. Install Pandoc for the complete conversion and WebKit test suites. See the [source-build instructions](README.md#build-from-source).
+Use Node.js 26 and npm. The macOS host needs macOS 14+ and Xcode 26 SDK tools. The release still targets macOS 14; macOS 26 APIs are guarded at runtime. Windows packaging needs Windows x64, Visual Studio 2022 Build Tools with Desktop development with C++, and PowerShell 7 (`pwsh`); Linux packaging uses Ubuntu 22.04 x64. Install Pandoc for the complete conversion and WebKit test suites. See the [source-build instructions](README.md#build-from-source).
 
 ```sh
 git clone https://github.com/AniChikage/open-markdown-lane.git

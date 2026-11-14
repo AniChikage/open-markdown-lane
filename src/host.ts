@@ -41,7 +41,7 @@ const browser: Host = {
   async captureVersion() { return { versions: [] }; },
   async readVersion() { throw new Error('持久化版本历史请使用桌面应用。'); },
   async setLocale() {},
-  async setAppearance() { return false; },
+  async setAppearance() { return "none"; },
   async systemLocale() { return normalizeLocale(navigator.language); },
 
   native: false,

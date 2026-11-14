@@ -214,6 +214,9 @@ jobs:
   macos:
     runs-on: macos-15
     timeout-minutes: 25
+    env:
+      # Build the macOS 26 glass API, but exercise the runtime fallback on macOS 15.
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -223,8 +226,11 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Check Apple Silicon runner
-        run: node -e "if(process.platform !== 'darwin' || process.arch !== 'arm64') process.exit(1)"
+      - name: Check Apple Silicon runner and macOS 26 SDK
+        run: |
+          node -e "if(process.platform !== 'darwin' || process.arch !== 'arm64') process.exit(1)"
+          xcrun --show-sdk-version
+          test "$(xcrun --show-sdk-version | cut -d. -f1)" -ge 26
       - run: npm ci
       - name: Prepare verified official release dependencies
         run: node scripts/prepare-release-downloads.mts
@@ -404,7 +410,7 @@ jobs:
           retention-days: 7
 
   retire-superseded:
-    if: inputs.tag == 'v0.26.1' && inputs.create_tag
+    if: inputs.tag == 'v0.26.2' && inputs.create_tag
     needs: appimage-public-update
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -423,7 +429,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RETIRE_EXACT_RELEASES: v0.26.1
+          RETIRE_EXACT_RELEASES: v0.26.2
           OPEN_MARKDOWN_LANE_QA_DIR: ${{ runner.temp }}/open-markdown-lane-release-retirement
       - name: Save replacement checksums and retired release metadata
         if: always()

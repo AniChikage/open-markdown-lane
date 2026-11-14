@@ -4,9 +4,9 @@ Open Markdown Lane 是一个开源 Markdown 编辑器。打开自己的文件夹
 
 项目采用 MIT 许可证，受 Typora 的行内编辑体验启发，**与 Typora 官方没有关联，也不是官方免费版**。有能力的话，欢迎[购买 Typora](https://store.typora.io/)，支持官方开发者。
 
-![Open Markdown Lane 0.26.1 英文工作区](images/hero.png)
+![Open Markdown Lane 0.26.2 英文工作区](images/hero.png)
 
-## 0.26.1 的工作区
+## 0.26.2 的工作区
 
 macOS 侧栏使用真正的磨砂半透明材质，能透出并模糊窗口背后的色彩，正文保持实底。系统材质明暗随当前主题同步；Windows/Linux 保留实底后备。
 
@@ -34,4 +34,4 @@ HTML、PDF 可直接导出；额外格式依赖可选的 Pandoc、LibreOffice �
 
 [源码](https://github.com/AniChikage/open-markdown-lane) · [报告问题](https://github.com/AniChikage/open-markdown-lane/issues/new?template=bug_report.yml)
 
-本文使用 AI 辅助整理，功能和截图对应 0.26.1。
+本文使用 AI 辅助整理，功能和截图对应 0.26.2。

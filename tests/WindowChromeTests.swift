@@ -7,6 +7,11 @@ private final class WindowDragSpy: EditorWindow {
 }
 
 func runWindowChromeTests() throws {
+  try exerciseWindowChrome(allowsGlass: true)
+  try exerciseWindowChrome(allowsGlass: false)
+}
+
+private func exerciseWindowChrome(allowsGlass: Bool) throws {
   _ = NSApplication.shared
   let window = WindowDragSpy(
     contentRect: NSRect(x: 0, y: 0, width: 900, height: 640),
@@ -16,7 +21,7 @@ func runWindowChromeTests() throws {
   window.titleVisibility = .hidden
   window.titlebarAppearsTransparent = true
   let webView = WKWebView(frame: window.contentView!.bounds)
-  window.setEditorWebView(webView)
+  window.setEditorWebView(webView, allowsGlass: allowsGlass)
   defer { window.close() }
 
   func event(_ point: NSPoint, type: NSEvent.EventType = .leftMouseDown) -> NSEvent {
@@ -29,8 +34,17 @@ func runWindowChromeTests() throws {
     guard condition else { throw NativeFailure("FAIL: " + name) }
     print("PASS: " + name)
   }
-  try expect(window.contentView is NSVisualEffectView && !window.isOpaque,
-    "window installs the native sidebar material behind a transparent web view")
+  try expect(!window.isOpaque && webView.value(forKey: "drawsBackground") as? Bool == false,
+    "native chrome keeps the web view and window background transparent")
+  if #available(macOS 26.0, *), allowsGlass {
+    guard let glass = window.contentView as? NSGlassEffectView else { throw NativeFailure("Missing native glass container") }
+    try expect(glass.contentView === webView && glass.style == .regular && window.workspaceMaterial == "macos-glass",
+      "macOS 26 embeds the actual web view inside regular native glass")
+  } else {
+    guard let effect = window.contentView as? NSVisualEffectView else { throw NativeFailure("Missing legacy material container") }
+    try expect(effect.subviews.contains(webView) && effect.material == .underWindowBackground && effect.blendingMode == .behindWindow && window.workspaceMaterial == "macos",
+      "older macOS retains the behind-window material fallback")
+  }
   for size in [NSSize(width: 900, height: 640), NSSize(width: 660, height: 500), NSSize(width: 1380, height: 960)] {
     window.setContentSize(size)
     try expect(webView.frame.size == window.contentView!.bounds.size,

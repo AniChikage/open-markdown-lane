@@ -343,7 +343,7 @@ export default function App() {
     let current = true;
     const appearance = (builtInThemes.find(item => item.id === theme) || builtInThemes[0]).dark ? "dark" : "light";
     void host.setAppearance(appearance).then(material => {
-      if (current) document.documentElement.dataset.windowMaterial = material ? "macos" : "none";
+      if (current) document.documentElement.dataset.windowMaterial = material;
     }).catch(() => { if (current) document.documentElement.dataset.windowMaterial = "none"; });
     return () => { current = false; };
   }, [theme]);

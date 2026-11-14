@@ -1,4 +1,4 @@
-// Explicit 0.26.1 cleanup, after publication and public AppImageUpdate acceptance.
+// Explicit 0.26.2 cleanup, after publication and public AppImageUpdate acceptance.
 // Keep source tags and Git history; retire only the reviewed release IDs below.
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
@@ -8,7 +8,7 @@ import {mkdtemp,mkdir,readFile,writeFile,rm,stat} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import manifest from './superseded-release-manifest.json' with {type:'json'};
-const repo='AniChikage/open-markdown-lane',version='0.26.1',tag='v'+version;
+const repo='AniChikage/open-markdown-lane',version='0.26.2',tag='v'+version;
 assert.equal(process.env.GH_REPO,repo);
 assert.equal(process.env.RETIRE_EXACT_RELEASES,tag);
 assert.equal(process.env.GITHUB_EVENT_NAME,'workflow_dispatch');

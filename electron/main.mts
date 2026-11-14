@@ -133,9 +133,9 @@ const handlers: IpcHandlers = {
   setLocale: (_, locale) => { const next = locale === 'en' ? 'en' : 'zh-CN'; if (uiLocale !== next) { uiLocale = next; buildMenu(); } return true; },
   setAppearance: (_, appearance) => {
     if (appearance !== 'light' && appearance !== 'dark') throw new Error('外观无效。');
-    if (process.platform !== 'darwin') return false;
+    if (process.platform !== 'darwin') return "none";
     nativeTheme.themeSource = appearance;
-    return true;
+    return "macos";
   },
   background: () => readBackground(store.dataDir),
   clearBackground: () => clearBackground(store.dataDir),
