@@ -24,7 +24,7 @@ Open Markdown Lane is an open-source Markdown editor inspired by Typora's inline
 
 **Status:** early development, version **0.26.2**. Release builds support **macOS 14+ on Apple Silicon**, **Windows 10/11 x64**, and **Linux x64**. On first launch, the interface and sample notes follow the system language: Chinese locales use Simplified Chinese, and other locales use English. New profiles stay in Follow system language mode until you choose a language in Preferences → Language. A manual choice always takes precedence; existing notes and saved settings are preserved. On Linux, `LC_ALL`, `LC_MESSAGES`, then `LANG` determine the initial language. This is an independent project, unaffiliated with Typora; full feature and behavior parity is still in progress.
 
-**0.26.2 release checks:** native glass and legacy-material regressions passed locally; three-platform release checks are pending. [Verification record](docs/verification.md).
+**0.26.2 release checks:** native macOS 26 glass, the macOS 15 fallback, Windows/Linux installation tests, Everything preview, real Ubuntu FUSE mounts and public AppImageUpdate passed. [Verification record](docs/verification.md).
 
 ## Features
 
