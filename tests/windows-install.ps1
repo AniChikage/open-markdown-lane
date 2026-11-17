@@ -30,6 +30,8 @@ node tests/spreadsheet-desktop.mts
 if ($LASTEXITCODE -ne 0) { throw "Spreadsheet clipboard acceptance failed" }
 node tests/context-menu-desktop.mts
 if ($LASTEXITCODE -ne 0) { throw 'Installed context-menu, clipboard and safe tab-close acceptance failed' }
+node tests/sidebar-menus-desktop.mts
+if ($LASTEXITCODE -ne 0) { throw 'Installed sidebar menu clipping regression failed' }
 node tests/community-plugins-desktop.mts
 if ($LASTEXITCODE -ne 0) { throw 'Installed community plugin acceptance failed' }
 node tests/huge-blocks-desktop.mts

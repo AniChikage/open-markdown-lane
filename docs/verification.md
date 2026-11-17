@@ -1,3 +1,13 @@
+# 0.26.3 文件侧栏菜单（Issue #19）
+
+报告环境为 Windows 11 x64／0.26.2。“…”和文件右键菜单原来位于磨砂侧栏内部：`backdrop-filter` 使 fixed 定位相对于侧栏，叠加 `overflow: hidden` 后裁掉越界部分；仅提高 z-index 无法解决。修复将弹层通过 React portal 挂到 body，按实际尺寸限制窗口边界，短窗口内部滚动；保留排序、文件操作与主题，增加外部滚动／缩放关闭和 Esc 焦点恢复。
+
+- 修复前使用 0.26.2 生产前端、隔离 Electron 与 Windows/Linux 后备 CSS 稳定复现；菜单右侧命中正文而非菜单，截图与 DOM 命中证据一致。这是本机 CSS 分支复现，不记为真实 Windows 机器测试。
+- 新增安装载荷专项 `tests/sidebar-menus-desktop.mts`：1380×900、780×600、660×420，实际指针命中、排序持久化、文件重命名取消、内部／外部滚动、缩放、Esc 焦点、明暗主题及空错误列表。Windows 和 Linux 安装流程均执行该测试。
+- 本机严格类型检查、生产构建及 265 项单元通过。三平台发行门禁及正式安装结果将在验证后补充；实体输入法候选窗和外部真实模型本轮不计为新验收。
+
+---
+
 # 0.26.2 macOS 26 原生玻璃
 
 macOS 26 及以上原生宿主使用 `NSGlassEffectView` 的标准玻璃，WebView 作为其 `contentView` 嵌入，侧栏底色为 8%；macOS 14/15 保留原有 `NSVisualEffectView` 窗口背后材质与 24% 底色。宿主返回实际材质能力，网页及 Windows/Linux 仍使用不透明后备；Electron macOS 开发宿主保留原有 vibrancy。最低运行系统仍为 macOS 14，编译需要 macOS 26 SDK。
@@ -6,7 +16,7 @@ macOS 26 及以上原生宿主使用 `NSGlassEffectView` 的标准玻璃，WebVi
 - 浅色、深色与同文档双视图使用生产代码，未在夹具中改写材质或 CSS。自有中性灰蓝背景、明暗色块和细线条的实际屏幕合成截图可见背景透入和模糊，正文保持实底；授权范围仍仅限自有测试窗口矩形，捕获前检查其他应用遮挡，不修改系统录屏权限。
 - macOS 26 完整原生 WebKit 163 项、双视图 15 项及 AI UI 62 项检查通过，错误列表为空；涵盖中文组合输入、精确保存、对侧撤销／重做、重启、插件、32+ MiB 代码与复杂 PDF／HTML 导出。AI 使用自有 HTTP 服务，不计为外部真实模型复测。实拍中对标准明暗主题各六处空白侧栏像素抽样，与默认正文色按侧栏混合比例计算的文字对比度最低分别为 5.58／5.10，不代表所有第三方主题与任意背景均已穷尽。
 - Electron 工作区七组、共享视图九组、实际外观 IPC 与辅助显示检查通过。新玻璃能力对应的 CSS 分支在隔离 Electron 中模拟检查，减少透明度／强制颜色均回退为实底，660／780／1024／1440 像素无横向溢出；不将这项 CSS 模拟称为原生系统材质实测。实体输入法候选窗和外部真实模型本轮未重新人工验收。
-- 2026-11-14，已发布 [v0.26.2](https://github.com/AniChikage/open-markdown-lane/releases/tag/v0.26.2)，发行源码 `bc07a35c2dba1394ccc96c7d20e35d5a15de76d1`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/43597396893)八项全部通过，包含三平台、Everything、真实 FUSE、发布、公开 AppImage 更新与指定旧 Release 清理。macOS CI 在 15 上实际执行旧材质路径，本机 26.5.2 执行新玻璃路径；产物使用 macOS 26 SDK，最低目标 14.0，新玻璃类为弱链接，没有将 macOS 14 实体机算作已验收。
+- 2026-11-14，已发布 [v0.26.2](https://github.com/AniChikage/open-markdown-lane/tree/v0.26.2)，发行源码 `bc07a35c2dba1394ccc96c7d20e35d5a15de76d1`。[正式流水线](https://github.com/AniChikage/open-markdown-lane/actions/runs/43597396893)八项全部通过，包含三平台、Everything、真实 FUSE、发布、公开 AppImage 更新与指定旧 Release 清理。macOS CI 在 15 上实际执行旧材质路径，本机 26.5.2 执行新玻璃路径；产物使用 macOS 26 SDK，最低目标 14.0，新玻璃类为弱链接，没有将 macOS 14 实体机算作已验收。
 - Windows 23 份、Linux 58 份验收 JSON 的错误列表为空，覆盖安装、升级、文件关联、恢复、卸载和既有 Issue 回归。Everything 1.4.1.1032 完整大文件预览与相对路径图片通过，源文件不变，沙箱和原处理器恢复保留。Ubuntu 22.04／24.04 实际普通用户 FUSE 挂载、沙箱编辑、精确保存／撤销与正常退出卸载通过；不等于完整 Ubuntu/Kubuntu 26.04 桌面人工验收。
 - 公开 AppImageUpdate 从 0.26.1 沿内嵌稳定通道得到 0.26.2，摘要一致，验证后移除测试旧文件并检查无更新，没有通道覆盖。六个公开安装包及 zsync 已重新下载核对尺寸、GitHub 资源摘要和 SHA-256 清单；Mac DMG 只读挂载后的 415 项文件／链接与 ZIP 应用一致，原始签名有效。
 - 另用 CI 代码与资源建立隔离 Mac 验收副本，只改变副本名称、标识与签名；去除签名尺寸字段影响后，签名前的全部可执行载荷一致，412 个其余资源文件逐个相同。该副本通过中文文本精确保存和跨窗格撤销／重做。额外的副本屏幕合成尝试被其他窗口遮挡／堆叠顺序保护中止，没有生成或计入成功截图；上面的生产代码合成夹具实拍与这项中止分别记录。

@@ -243,6 +243,8 @@ jobs:
         run: node scripts/test-ai-native.mts
       - name: Build native app, DMG, ZIP, and checksums
         run: npm run package:release
+      - name: Verify sidebar menu clipping and viewport interaction
+        run: npm run test:sidebar-menus
       - name: Verify rename upgrade preserves drafts and settings
         run: npm run test:branding
       - name: Verify real native spreadsheet clipboard, source mode and undo
@@ -410,7 +412,7 @@ jobs:
           retention-days: 7
 
   retire-superseded:
-    if: inputs.tag == 'v0.26.2' && inputs.create_tag
+    if: inputs.tag == 'v0.26.3' && inputs.create_tag
     needs: appimage-public-update
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -429,7 +431,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RETIRE_EXACT_RELEASES: v0.26.2
+          RETIRE_EXACT_RELEASES: v0.26.3
           OPEN_MARKDOWN_LANE_QA_DIR: ${{ runner.temp }}/open-markdown-lane-release-retirement
       - name: Save replacement checksums and retired release metadata
         if: always()

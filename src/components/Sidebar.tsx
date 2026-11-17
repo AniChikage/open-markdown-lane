@@ -1,4 +1,3 @@
-import { createPortal } from "react-dom";
 import { storedItem } from "../migrateStorage.ts";
 import { t } from "../i18n";
 import {
@@ -11,7 +10,8 @@ import {
   X,
   ChevronDown, MoreHorizontal, Search, History, ListTree, List, ListOrdered,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { DocumentRecord, FileEntry, FileOperation } from "../types";
 import type { Heading } from "../editor/markdown";
 import { FileTree, sortFiles } from "./FileTree";
@@ -44,13 +44,49 @@ interface Props {
 }
 export function Sidebar(props: Props) {
   const [menu, setMenu] = useState<{ x: number; y: number; file: FileEntry | null } | null>(null);
+  const menuPanel = useRef<HTMLDivElement>(null);
+  const menuTrigger = useRef<HTMLElement | null>(null);
   const [sort, setSort] = useState<FileSort>(() => (storedItem(localStorage, "open-markdown-lane-file-sort") || "natural") as FileSort);
   const [descending, setDescending] = useState(() => storedItem(localStorage, "open-markdown-lane-file-desc") === "true");
   const [foldersFirst, setFoldersFirst] = useState(() => storedItem(localStorage, "open-markdown-lane-folders-first") !== "false");
   const sorted = sortFiles(props.files.filter(file => file.isDirectory !== "true"), sort, descending, foldersFirst);
   useEffect(() => { localStorage.setItem("open-markdown-lane-file-sort", sort); localStorage.setItem("open-markdown-lane-file-desc", String(descending)); localStorage.setItem("open-markdown-lane-folders-first", String(foldersFirst)); }, [sort, descending, foldersFirst]);
-  useEffect(() => { if (!menu) return; const close = () => setMenu(null); const key = (event: KeyboardEvent) => { if (event.key === "Escape") close(); }; document.addEventListener("click", close); document.addEventListener("keydown", key); return () => { document.removeEventListener("click", close); document.removeEventListener("keydown", key); }; }, [menu]);
-  const context = (event: React.MouseEvent, file: FileEntry | null) => { event.preventDefault(); event.stopPropagation(); setMenu({ x: Math.min(event.clientX, window.innerWidth - 210), y: Math.min(event.clientY, window.innerHeight - 380), file }); };
+  useLayoutEffect(() => {
+    const panel = menuPanel.current;
+    if (!menu || !panel) return;
+    const rect = panel.getBoundingClientRect();
+    panel.style.left = `${Math.max(8, Math.min(menu.x, window.innerWidth - rect.width - 8))}px`;
+    panel.style.top = `${Math.max(8, Math.min(menu.y, window.innerHeight - rect.height - 8))}px`;
+  }, [menu]);
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const outside = (event: Event) => {
+      if (event.target instanceof Node && !menuPanel.current?.contains(event.target)) close();
+    };
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      close();
+      if (menuTrigger.current?.isConnected) menuTrigger.current.focus();
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("scroll", outside, true);
+    document.addEventListener("keydown", key);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("scroll", outside, true);
+      document.removeEventListener("keydown", key);
+      window.removeEventListener("resize", close);
+    };
+  }, [menu]);
+  const context = (event: React.MouseEvent, file: FileEntry | null) => {
+    event.preventDefault();
+    event.stopPropagation();
+    menuTrigger.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    setMenu({ x: event.clientX, y: event.clientY, file });
+  };
   function operate(action: FileOperation["action"]) {
     const file = menu?.file, directory = file?.isDirectory === "true";
     const parent = directory ? file!.path : file?.path.slice(0, -file.name.length - 1) || props.folder || undefined;
@@ -207,7 +243,8 @@ export function Sidebar(props: Props) {
           </nav>
         )}
       </div>
-      {menu && createPortal(<div className="file-context-menu" role="menu" aria-label={t("文件操作")} style={{ left: menu.x, top: Math.max(45, menu.y) }} onClick={event => event.stopPropagation()}>
+      {/* The frosted sidebar establishes a containing block and clips descendants. */}
+      {menu && createPortal(<div ref={menuPanel} className="file-context-menu" role="menu" aria-label={t("文件操作")} style={{ left: menu.x, top: menu.y }} onClick={event => event.stopPropagation()}>
         <button role="menuitem" onClick={() => operate("new-file")}>{t("新建文件…")}</button><button role="menuitem" onClick={() => operate("new-folder")}>{t("新建文件夹…")}</button>
         {menu.file && <><hr />{menu.file.isDirectory !== "true" && <button role="menuitem" onClick={() => operate("duplicate")}>{t("创建副本…")}</button>}<button role="menuitem" onClick={() => operate("rename")}>{t("重命名…")}</button><button role="menuitem" onClick={() => operate("move")}>{t("移动到…")}</button><button role="menuitem" onClick={() => operate("trash")}>{t("移到废纸篓")}</button><button role="menuitem" onClick={() => { void host.writeClipboard(menu.file!.path); setMenu(null); }}>{t("复制路径")}</button><button role="menuitem" onClick={() => { void host.reveal(menu.file!.path).catch(e => props.notify(e.message)); setMenu(null); }}>{t("在 Finder 中显示")}</button></>}
         <hr /><button role="menuitem" onClick={() => operate("undo")}>{t("撤销上次文件操作")}</button><hr /><label>{t("排序")}<select aria-label={t("文件排序")} value={sort} onChange={e => setSort(e.target.value as FileSort)}><option value="natural">{t("自然名称")}</option><option value="name">{t("字母顺序")}</option><option value="modified">{t("修改时间")}</option><option value="created">{t("创建时间")}</option></select></label><label><input type="checkbox" checked={descending} onChange={e => setDescending(e.target.checked)} />{t("降序")}</label><label><input type="checkbox" checked={foldersFirst} onChange={e => setFoldersFirst(e.target.checked)} />{t("文件夹优先")}</label>
